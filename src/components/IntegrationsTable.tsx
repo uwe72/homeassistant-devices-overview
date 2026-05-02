@@ -1,15 +1,30 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useHA } from '../context/HAContext'
 import FilterBar from './FilterBar'
-import type { EntityData, SortState } from '../types'
+import type { EntityData } from '../types'
 
 function StatusDot({ online }: { online: boolean }) {
   return (
-    <span className={`inline-flex items-center gap-2 text-xs ${online ? 'text-[#4a9f6e]' : 'text-[#e05252]'}`}>
-      <span className={`w-2 h-2 rounded-full ${online ? 'bg-[#4a9f6e] shadow-[0_0_6px_rgba(74,159,110,0.4)]' : 'bg-[#e05252] shadow-[0_0_6px_rgba(224,82,82,0.4)]'}`} />
+    <span className={`inline-flex items-center gap-2 text-xs ${online ? 'text-[#30D158]' : 'text-[#FF453A]'}`}>
+      <span className={`w-2 h-2 rounded-full ${online ? 'bg-[#30D158] shadow-[0_0_6px_rgba(48,209,88,0.4)]' : 'bg-[#FF453A] shadow-[0_0_6px_rgba(255,69,58,0.4)]'}`} />
       {online ? 'Online' : 'Offline'}
     </span>
   )
+}
+
+const INTEGRATION_COLORS: Record<string, { bg: string; text: string }> = {
+  'Philips Hue': { bg: 'bg-[#0A84FF20]', text: 'text-[#0A84FF]' },
+  'ZHA': { bg: 'bg-[#BF5AF220]', text: 'text-[#BF5AF2]' },
+  'Zigbee2MQTT': { bg: 'bg-[#30D15820]', text: 'text-[#30D158]' },
+  'Shelly': { bg: 'bg-[#FF9F0A20]', text: 'text-[#FF9F0A]' },
+  'ESPHome': { bg: 'bg-[#FFD60A20]', text: 'text-[#FFD60A]' },
+  'Homematic IP': { bg: 'bg-[#BF5AF220]', text: 'text-[#BF5AF2]' },
+  'Gruppe': { bg: 'bg-[#4a4a4a20]', text: 'text-[#9a9a9a]' },
+}
+
+function getIntegrationColor(integration: string): { bg: string; text: string } {
+  return INTEGRATION_COLORS[integration] || { bg: 'bg-[#0A84FF20]', text: 'text-[#0A84FF]' }
 }
 
 
@@ -25,41 +40,42 @@ function getConfigStatus(entity: EntityData, currentFloorId: string | null): { i
   }
 }
 
-export default function HueTable() {
-  const { hueEntities, areas, floors, typLabels, updateEntityLabels, updateEntityName, updateEntityArea } = useHA()
-  const [search, setSearch] = useState('')
-  const [filters, setFilters] = useState({
-    status: 'all',
-    typ: 'all',
-    configStatus: 'all',
-    floor: 'all',
-    area: 'all',
-    ignore: 'hidden'
-  })
-  const [sort, setSort] = useState<SortState>({ field: 'friendly_name', direction: 'asc' })
+export default function IntegrationsTable() {
+  const [searchParams] = useSearchParams()
+  const { 
+    integrationEntities, areas, floors, typLabels, updateEntityLabels, updateEntityName, updateEntityArea,
+    integrationFilters, integrationSearch, integrationSort, setIntegrationFilter, setIntegrationSearch, setIntegrationSort
+  } = useHA()
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editValue, setEditValue] = useState('')
   const [bulkLabel, setBulkLabel] = useState('')
   const [pendingFloor, setPendingFloor] = useState<Record<string, string>>({})
+  const [entityNotFound, setEntityNotFound] = useState<string | null>(null)
 
   const availableAreas = useMemo(() => {
-    if (filters.floor === 'all') {
+    if (integrationFilters.floor === 'all') {
       return areas.map(a => a.name)
     }
-    const selectedFloor = floors.find(f => f.name === filters.floor)
+    const selectedFloor = floors.find(f => f.name === integrationFilters.floor)
     if (!selectedFloor) return []
     return areas
       .filter(a => a.floor_id === selectedFloor.floor_id)
       .map(a => a.name)
-  }, [filters.floor, floors, areas])
+  }, [integrationFilters.floor, floors, areas])
 
   const availableFilters = useMemo(() => {
     const types = new Set<string>()
     let hasIgnore = false
-    hueEntities.forEach(e => {
+    
+    const entitiesForIntegration = integrationFilters.integration === 'all' 
+      ? integrationEntities 
+      : integrationEntities.filter(e => e.integration === integrationFilters.integration)
+    
+    entitiesForIntegration.forEach(e => {
       if (e.typ) types.add(e.typ)
       if (e.typLabelRaw === 'typ_ignore') hasIgnore = true
     })
+    
     return {
       status: ['online', 'offline'],
       typ: ['none', ...Array.from(types).sort(), ...(hasIgnore ? ['Ignorieren'] : [])],
@@ -68,7 +84,45 @@ export default function HueTable() {
       area: availableAreas,
       ignore: ['hidden']
     }
-  }, [hueEntities, floors, availableAreas])
+  }, [integrationEntities, integrationFilters.integration, floors, availableAreas])
+
+  const integrationList = useMemo(() => {
+    const integrations = new Set<string>()
+    integrationEntities.forEach(e => {
+      if (e.integration) integrations.add(e.integration)
+    })
+    return Array.from(integrations).sort()
+  }, [integrationEntities])
+
+  useEffect(() => {
+    if (integrationList.length > 0 && integrationFilters.integration === 'all') {
+      setIntegrationFilter('integration', integrationList[0])
+    }
+  }, [integrationList, integrationFilters.integration, setIntegrationFilter])
+
+  useEffect(() => {
+    const entityParam = searchParams.get('entity')
+    if (entityParam && integrationEntities.length > 0) {
+      const entity = integrationEntities.find(e => e.entity_id === entityParam)
+      if (entity) {
+        setIntegrationSearch(entityParam)
+        if (entity.integration && integrationList.includes(entity.integration)) {
+          setIntegrationFilter('integration', entity.integration)
+        }
+        setEntityNotFound(null)
+      } else {
+        setEntityNotFound(entityParam)
+        setIntegrationSearch(entityParam)
+      }
+    }
+  }, [searchParams, integrationEntities, integrationList, setIntegrationFilter, setIntegrationSearch])
+
+  const totalInIntegration = useMemo(() => {
+    if (integrationFilters.integration === 'all') {
+      return integrationEntities.length
+    }
+    return integrationEntities.filter(e => e.integration === integrationFilters.integration).length
+  }, [integrationEntities, integrationFilters.integration])
 
   const areaToFloorMap = useMemo(() => {
     const map: Record<string, string> = {}
@@ -92,54 +146,46 @@ export default function HueTable() {
   }, [areas])
 
   const filteredEntities = useMemo(() => {
-    return hueEntities.filter(e => {
-      const matchSearch = !search ||
-        e.friendly_name.toLowerCase().includes(search.toLowerCase()) ||
-        e.entity_id.toLowerCase().includes(search.toLowerCase())
+    return integrationEntities.filter(e => {
+      const matchSearch = !integrationSearch ||
+        e.friendly_name.toLowerCase().includes(integrationSearch.toLowerCase()) ||
+        e.entity_id.toLowerCase().includes(integrationSearch.toLowerCase())
 
-      const matchStatus = filters.status === 'all' ||
-        (filters.status === 'online' ? e.online : !e.online)
+      const matchStatus = integrationFilters.status === 'all' ||
+        (integrationFilters.status === 'online' ? e.online : !e.online)
 
       let matchTyp = true
-      if (filters.typ === 'none') {
+      if (integrationFilters.typ === 'none') {
         matchTyp = e.typ === null && e.typLabelRaw !== 'typ_ignore'
-      } else if (filters.typ === 'Ignorieren') {
+      } else if (integrationFilters.typ === 'Ignorieren') {
         matchTyp = e.typLabelRaw === 'typ_ignore'
-      } else if (filters.typ !== 'all') {
-        matchTyp = e.typ === filters.typ
+      } else if (integrationFilters.typ !== 'all') {
+        matchTyp = e.typ === integrationFilters.typ
       }
+
+      const matchIntegration = integrationFilters.integration === 'all' ||
+        e.integration === integrationFilters.integration
 
       const currentFloorId = e.area_id ? areaToFloorMap[e.area_id] : null
       const configStatus = getConfigStatus(e, currentFloorId)
-      const matchConfigStatus = filters.configStatus === 'all' ||
-        (filters.configStatus === 'complete' ? configStatus.isComplete : !configStatus.isComplete)
+      const matchConfigStatus = integrationFilters.configStatus === 'all' ||
+        (integrationFilters.configStatus === 'complete' ? configStatus.isComplete : !configStatus.isComplete)
 
       const entityArea = areas.find(a => a.area_id === e.area_id)
-      const matchFloor = filters.floor === 'all' || entityArea?.floor_id === floors.find(f => f.name === filters.floor)?.floor_id
-      const matchArea = filters.area === 'all' || e.area_id === areas.find(a => a.name === filters.area)?.area_id
-      const matchIgnore = filters.ignore !== 'hidden' || e.typLabelRaw !== 'typ_ignore'
+      const matchFloor = integrationFilters.floor === 'all' || entityArea?.floor_id === floors.find(f => f.name === integrationFilters.floor)?.floor_id
+      const matchArea = integrationFilters.area === 'all' || e.area_id === areas.find(a => a.name === integrationFilters.area)?.area_id
+      const matchIgnore = integrationFilters.ignore !== 'hidden' || e.typLabelRaw !== 'typ_ignore'
 
-      return matchSearch && matchStatus && matchTyp && matchConfigStatus && matchFloor && matchArea && matchIgnore
+      return matchSearch && matchStatus && matchTyp && matchIntegration && matchConfigStatus && matchFloor && matchArea && matchIgnore
     }).sort((a, b) => {
-      const va = String(a[sort.field as keyof EntityData] || '')
-      const vb = String(b[sort.field as keyof EntityData] || '')
-      return sort.direction === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va)
+      const va = String(a[integrationSort.field as keyof EntityData] || '')
+      const vb = String(b[integrationSort.field as keyof EntityData] || '')
+      return integrationSort.direction === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va)
     })
-  }, [hueEntities, search, filters, sort, areaToFloorMap, areas, floors])
-
-  const handleFilterChange = (category: string, value: string) => {
-    setFilters(prev => ({ ...prev, [category]: value }))
-  }
-
-  const handleSort = (field: string) => {
-    setSort(prev => ({
-      field,
-      direction: prev.field === field ? (prev.direction === 'asc' ? 'desc' : 'asc') : 'asc'
-    }))
-  }
+  }, [integrationEntities, integrationSearch, integrationFilters, integrationSort, areaToFloorMap, areas, floors])
 
   const handleLabelChange = async (entityId: string, newLabel: string, oldLabel: string | null) => {
-    const entity = hueEntities.find(e => e.entity_id === entityId)
+    const entity = integrationEntities.find(e => e.entity_id === entityId)
     if (!entity) return
 
     let labels = [...entity.labels]
@@ -172,20 +218,10 @@ export default function HueTable() {
     await updateEntityArea(entityId, areaId || null)
   }
 
-  const startEdit = (entity: EntityData) => {
-    setEditingId(entity.entity_id)
-    setEditValue(entity.friendly_name)
-  }
-
   const saveEdit = async () => {
     if (editingId && editValue.trim()) {
       await updateEntityName(editingId, editValue.trim())
     }
-    setEditingId(null)
-    setEditValue('')
-  }
-
-  const cancelEdit = () => {
     setEditingId(null)
     setEditValue('')
   }
@@ -195,32 +231,46 @@ export default function HueTable() {
   }
 
   const SortArrow = ({ field }: { field: string }) => (
-    <span className={`ml-1 text-[10px] ${sort.field === field ? 'opacity-100 text-[#4fc3f7]' : 'opacity-30'}`}>
-      {sort.field === field ? (sort.direction === 'asc' ? '▲' : '▼') : '▲'}
+    <span className={`ml-1 text-[10px] ${integrationSort.field === field ? 'opacity-100 text-[#0A84FF]' : 'opacity-30'}`}>
+      {integrationSort.field === field ? (integrationSort.direction === 'asc' ? '▲' : '▼') : '▲'}
     </span>
   )
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-4">
-        <h1 className="text-xl font-semibold text-[#f5f5f5]">Philips Hue Entitäten</h1>
-        <span className="text-sm text-[#a0aec0]">
-          Zeige <span className="text-[#4fc3f7] font-semibold">{filteredEntities.length}</span> von <span className="text-[#4fc3f7] font-semibold">{hueEntities.length}</span> Entitäten
+    <div className="flex flex-col h-full space-y-4">
+      {entityNotFound && (
+        <div className="px-4 py-2 bg-[#FF453A20] border border-[#FF453A] rounded-lg text-sm text-[#FF453A]">
+          Entität "{entityNotFound}" ist nicht in den Entitäten (Hue, Homematic IP) enthalten.
+        </div>
+      )}
+      <div className="flex-shrink-0 flex items-center gap-4">
+        <h1 className="text-xl font-semibold text-[#ffffff]">Integrationen</h1>
+        <select
+          value={integrationFilters.integration}
+          onChange={(e) => setIntegrationFilter('integration', e.target.value)}
+          className="px-3 py-2 text-xs bg-[#1c1c1e] border border-[#2c2c2e] rounded-lg text-[#ffffff] focus:outline-none focus:border-[#0A84FF] min-w-[140px]"
+        >
+          {integrationList.map(integration => (
+            <option key={integration} value={integration}>{integration}</option>
+          ))}
+        </select>
+        <span className="text-sm text-[#9a9a9a]">
+          Zeige <span className="text-[#0A84FF] font-semibold">{filteredEntities.length}</span> von <span className="text-[#0A84FF] font-semibold">{totalInIntegration}</span> Entitäten
         </span>
         <input
           type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Hue Entitäten suchen..."
-          className="flex-1 px-4 py-2 bg-[#1a2028] border border-[#2d3748] rounded-lg text-[#f5f5f5] placeholder-[#6b7280] focus:outline-none focus:border-[#4fc3f7]"
+          value={integrationSearch}
+          onChange={(e) => setIntegrationSearch(e.target.value)}
+          placeholder="Entitäten suchen..."
+          className="flex-1 px-4 py-2 bg-[#1c1c1e] border border-[#2c2c2e] rounded-lg text-[#ffffff] placeholder-[#4a4a4a] focus:outline-none focus:border-[#0A84FF]"
         />
         <select
           value={bulkLabel}
           onChange={(e) => setBulkLabel(e.target.value)}
-          className="px-3 py-2 text-xs bg-[#1a2028] border border-[#2d3748] rounded-lg text-[#f5f5f5] focus:outline-none focus:border-[#4fc3f7]"
+          className="px-3 py-2 text-xs bg-[#1c1c1e] border border-[#2c2c2e] rounded-lg text-[#ffffff] focus:outline-none focus:border-[#0A84FF]"
         >
           <option value="">Typ wählen…</option>
-          {typLabels.map(label => (
+          {[...typLabels].sort((a, b) => a.name.localeCompare(b.name)).map(label => (
             <option key={label.label_id} value={label.label_id}>{label.name}</option>
           ))}
         </select>
@@ -229,28 +279,31 @@ export default function HueTable() {
           disabled={!bulkLabel}
           className={`px-4 py-2 text-xs font-medium rounded-lg border transition-colors whitespace-nowrap ${
             bulkLabel
-              ? 'border-[#4fc3f7] bg-[#4fc3f720] text-[#4fc3f7] hover:bg-[#4fc3f740]'
-              : 'border-[#2d3748] bg-[#1a2028] text-[#6b7280] cursor-not-allowed'
+              ? 'border-[#0A84FF] bg-[#0A84FF20] text-[#0A84FF] hover:bg-[#0A84FF40]'
+              : 'border-[#2c2c2e] bg-[#1c1c1e] text-[#4a4a4a] cursor-not-allowed'
           }`}
         >
           Allen Zeilen zuweisen
         </button>
       </div>
 
-      <FilterBar
-        filters={filters}
-        availableFilters={availableFilters}
-        onFilterChange={handleFilterChange}
-      />
+      <div className="flex-shrink-0">
+        <FilterBar
+          filters={integrationFilters}
+          availableFilters={availableFilters}
+          onFilterChange={setIntegrationFilter}
+        />
+      </div>
 
-      <div className="bg-[#1a2028] border border-[#2d3748] rounded-lg overflow-hidden">
-        <div className="overflow-x-auto">
+      <div className="flex-1 bg-[#1c1c1e] border border-[#2c2c2e] rounded-lg overflow-hidden flex flex-col min-h-0">
+        <div className="flex-1 overflow-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-[#0f1419] border-b border-[#2d3748]">
+              <tr className="bg-[#1c1c1e] border-b border-[#2c2c2e]">
                 {[
                   { key: 'configStatus', label: 'Konfiguration' },
                   { key: 'online', label: 'Status' },
+                  { key: 'integration', label: 'Integration' },
                   { key: 'floor', label: 'Bereich' },
                   { key: 'area', label: 'Raum' },
                   { key: 'friendly_name', label: 'Device' },
@@ -260,8 +313,8 @@ export default function HueTable() {
                 ].map(col => (
                   <th
                     key={col.key}
-                    onClick={() => handleSort(col.key)}
-                    className="px-4 py-3 text-left text-xs font-medium text-[#a0aec0] uppercase tracking-wider cursor-pointer hover:text-[#4fc3f7] whitespace-nowrap"
+                    onClick={() => setIntegrationSort(col.key)}
+                    className="sticky top-0 bg-[#1c1c1e] z-10 px-4 py-3 text-left text-xs font-medium text-[#9a9a9a] uppercase tracking-wider cursor-pointer hover:text-[#0A84FF] whitespace-nowrap"
                   >
                     {col.label}<SortArrow field={col.key} />
                   </th>
@@ -278,20 +331,25 @@ export default function HueTable() {
                 const configStatus = getConfigStatus(entity, currentFloorId)
 
                 return (
-                  <tr key={entity.entity_id} className="border-b border-[#1e293b] hover:bg-[#242d38] transition-colors">
+                  <tr key={entity.entity_id} className="border-b border-[#2c2c2e] hover:bg-[#2c2c2e] transition-colors">
                     <td className="px-4 py-2">
                       {configStatus.isComplete ? (
-                        <span className="px-2 py-1 bg-[#4a9f6e20] text-[#4a9f6e] rounded-full text-xs font-medium">
+                        <span className="px-2 py-1 bg-[#0F3D1E] text-[#30D158] rounded-full text-xs font-medium">
                           ✓ Vollständig
                         </span>
                       ) : (
-                        <span className="px-2 py-1 bg-[#e0525220] text-[#e05252] rounded-full text-xs font-medium">
+                        <span className="px-2 py-1 bg-[#3D0606] text-[#FF453A] rounded-full text-xs font-medium">
                           ⚠ Unvollständig
                         </span>
                       )}
                     </td>
                     <td className="px-4 py-2">
                       <StatusDot online={entity.online} />
+                    </td>
+                    <td className="px-4 py-2">
+                      <span className={`px-2 py-1 ${getIntegrationColor(entity.integration).bg} ${getIntegrationColor(entity.integration).text} rounded-full text-xs`}>
+                        {entity.integration}
+                      </span>
                     </td>
                     <td className="px-4 py-2">
                       <select
@@ -310,8 +368,8 @@ export default function HueTable() {
                             return { ...prev, [entity.entity_id]: floorId }
                           })
                         }}
-                        className={`px-2 py-1 bg-[#0f1419] border rounded text-xs text-[#f5f5f5] min-w-[120px] ${
-                          !currentFloorId ? 'border-[#e05252]' : 'border-[#2d3748]'
+                        className={`px-2 py-1 bg-[#1c1c1e] border rounded text-xs text-[#ffffff] min-w-[120px] ${
+                          !currentFloorId ? 'border-[#FF453A]' : 'border-[#2c2c2e]'
                         }`}
                       >
                         <option value="">Nicht zugeordnet</option>
@@ -330,8 +388,8 @@ export default function HueTable() {
                             return rest
                           })
                         }}
-                        className={`px-2 py-1 bg-[#0f1419] border rounded text-xs text-[#f5f5f5] min-w-[120px] ${
-                          !entity.area_id ? 'border-[#e05252]' : 'border-[#2d3748]'
+                        className={`px-2 py-1 bg-[#1c1c1e] border rounded text-xs text-[#ffffff] min-w-[120px] ${
+                          !entity.area_id ? 'border-[#FF453A]' : 'border-[#2c2c2e]'
                         }`}
                       >
                         <option value="">Nicht zugeordnet</option>
@@ -370,19 +428,19 @@ export default function HueTable() {
                             setEditingId(null)
                           }
                         }}
-                        className="px-2 py-1 bg-transparent border border-transparent hover:border-[#2d3748] focus:border-[#4fc3f7] focus:bg-[#0f1419] rounded text-[#f5f5f5] text-xs w-48 outline-none transition-colors"
+                        className="px-2 py-1 bg-transparent border border-transparent hover:border-[#2c2c2e] focus:border-[#0A84FF] focus:bg-[#1c1c1e] rounded text-[#ffffff] text-xs w-48 outline-none transition-colors"
                       />
                     </td>
                     <td className="px-4 py-2">
                       <select
                         value={entity.typLabelRaw || ''}
                         onChange={(e) => handleLabelChange(entity.entity_id, e.target.value, entity.typLabelRaw)}
-                        className={`px-2 py-1 bg-[#0f1419] border rounded text-xs text-[#f5f5f5] ${
-                          !entity.typLabelRaw ? 'border-[#e05252]' : 'border-[#2d3748]'
+                        className={`px-2 py-1 bg-[#1c1c1e] border rounded text-xs text-[#ffffff] ${
+                          !entity.typLabelRaw ? 'border-[#FF453A]' : 'border-[#2c2c2e]'
                         }`}
                       >
                         <option value="">- Kein Typ -</option>
-                        {typLabels.map(label => (
+                        {[...typLabels].sort((a, b) => a.name.localeCompare(b.name)).map(label => (
                           <option key={label.label_id} value={label.label_id}>{label.name}</option>
                         ))}
                       </select>
@@ -390,12 +448,12 @@ export default function HueTable() {
                     <td className="px-4 py-2">
                       <span
                         onClick={() => copyToClipboard(entity.entity_id)}
-                        className="font-mono text-xs text-[#6b7280] hover:text-[#4fc3f7] cursor-pointer px-2 py-1 bg-[#ffffff05] rounded"
+                        className="font-mono text-xs text-[#9a9a9a] hover:text-[#0A84FF] cursor-pointer px-2 py-1 bg-[#ffffff05] rounded"
                       >
                         {entity.entity_id}
                       </span>
                     </td>
-                    <td className="px-4 py-2 text-xs text-[#a0aec0]">
+                    <td className="px-4 py-2 text-xs text-[#9a9a9a]">
                       {entity.state}
                     </td>
                   </tr>
@@ -403,8 +461,8 @@ export default function HueTable() {
               })}
               {filteredEntities.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="px-4 py-8 text-center text-[#6b7280]">
-                    Keine Hue-Geräte gefunden
+                  <td colSpan={9} className="px-4 py-8 text-center text-[#4a4a4a]">
+                    Keine Entitäten gefunden
                   </td>
                 </tr>
               )}

@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react'
 import { haClient } from '../api/haClient'
-import type { HACredentials, EntityData, HAArea, HAFloor, HALabel, HAEntity, HADevice, HAState } from '../types'
+import type { HACredentials, EntityData, HAArea, HAFloor, HALabel, HAEntity, HADevice, HAState, FilterState, IntegrationFilterState, SortDirection } from '../types'
 
 interface HAContextType {
   isConnected: boolean
@@ -8,7 +8,7 @@ interface HAContextType {
   error: string | null
   credentials: HACredentials | null
   entities: EntityData[]
-  hueEntities: EntityData[]
+  integrationEntities: EntityData[]
   areas: HAArea[]
   floors: HAFloor[]
   typLabels: HALabel[]
@@ -18,6 +18,18 @@ interface HAContextType {
   updateEntityLabels: (entityId: string, labels: string[]) => Promise<void>
   updateEntityName: (entityId: string, name: string | null) => Promise<void>
   updateEntityArea: (entityId: string, areaId: string | null) => Promise<void>
+  deviceFilters: FilterState
+  deviceSearch: string
+  deviceSort: { field: string; direction: SortDirection }
+  integrationFilters: IntegrationFilterState
+  integrationSearch: string
+  integrationSort: { field: string; direction: SortDirection }
+  setDeviceFilter: (key: string, value: string) => void
+  setDeviceSearch: (value: string) => void
+  setDeviceSort: (field: string) => void
+  setIntegrationFilter: (key: string, value: string) => void
+  setIntegrationSearch: (value: string) => void
+  setIntegrationSort: (field: string) => void
 }
 
 const HAContext = createContext<HAContextType | null>(null)
@@ -28,7 +40,7 @@ const INTEGRATION_MAP: Record<string, string> = {
   'mqtt': 'Zigbee2MQTT',
   'shelly': 'Shelly',
   'esphome': 'ESPHome',
-  'homematic': 'Homematic',
+  'homematicip_local': 'Homematic IP',
   'group': 'Gruppe'
 }
 
@@ -46,10 +58,65 @@ export function HAProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<string | null>(null)
   const [credentials, setCredentials] = useState<HACredentials | null>(null)
   const [entities, setEntities] = useState<EntityData[]>([])
-  const [hueEntities, setHueEntities] = useState<EntityData[]>([])
+  const [integrationEntities, setIntegrationEntities] = useState<EntityData[]>([])
   const [areas, setAreas] = useState<HAArea[]>([])
   const [floors, setFloors] = useState<HAFloor[]>([])
   const [typLabels, setTypLabels] = useState<HALabel[]>([])
+
+  const [deviceFilters, setDeviceFilters] = useState<FilterState>({
+    status: 'all',
+    typ: 'all',
+    integration: 'all',
+    floor: 'all',
+    area: 'all'
+  })
+  const [deviceSearch, setDeviceSearch] = useState('')
+  const [deviceSort, setDeviceSortState] = useState<{ field: string; direction: SortDirection }>({
+    field: 'typ',
+    direction: 'asc'
+  })
+
+  const [integrationFilters, setIntegrationFilters] = useState<IntegrationFilterState>({
+    status: 'all',
+    typ: 'all',
+    integration: 'all',
+    configStatus: 'all',
+    floor: 'all',
+    area: 'all',
+    ignore: 'hidden'
+  })
+  const [integrationSearch, setIntegrationSearch] = useState('')
+  const [integrationSort, setIntegrationSortState] = useState<{ field: string; direction: SortDirection }>({
+    field: 'friendly_name',
+    direction: 'asc'
+  })
+
+  const setDeviceFilter = useCallback((key: string, value: string) => {
+    setDeviceFilters(prev => {
+      if (key === 'floor') {
+        return { ...prev, [key]: value, area: 'all' }
+      }
+      return { ...prev, [key]: value }
+    })
+  }, [])
+
+  const setDeviceSort = useCallback((field: string) => {
+    setDeviceSortState(prev => ({
+      field,
+      direction: prev.field === field ? (prev.direction === 'asc' ? 'desc' : 'asc') : 'asc'
+    }))
+  }, [])
+
+  const setIntegrationFilter = useCallback((key: string, value: string) => {
+    setIntegrationFilters(prev => ({ ...prev, [key]: value }))
+  }, [])
+
+  const setIntegrationSort = useCallback((field: string) => {
+    setIntegrationSortState(prev => ({
+      field,
+      direction: prev.field === field ? (prev.direction === 'asc' ? 'desc' : 'asc') : 'asc'
+    }))
+  }, [])
 
   const processEntityData = useCallback((
     entityList: HAEntity[],
@@ -58,9 +125,9 @@ export function HAProvider({ children }: { children: React.ReactNode }) {
     floorMap: Record<string, HAFloor>,
     stateMap: Record<string, HAState>,
     labelRegistry: HALabel[]
-  ): { main: EntityData[], hue: EntityData[] } => {
+  ): { main: EntityData[], integration: EntityData[] } => {
     const mainData: EntityData[] = []
-    const hueData: EntityData[] = []
+    const integrationData: EntityData[] = []
 
     entityList.forEach(e => {
       const state = stateMap[e.entity_id] || {}
@@ -69,7 +136,7 @@ export function HAProvider({ children }: { children: React.ReactNode }) {
       const floor = floorMap[area?.floor_id || '']
 
       const labels = e.labels || []
-      const isHue = e.platform === 'hue'
+      const isAllowedIntegration = e.platform === 'hue' || e.platform === 'homematicip_local'
 
       const typLabel = labels.find(l => l && l.startsWith('typ_'))
       const isValidTypLabel = typLabel && labelRegistry.some(l => l.label_id === typLabel)
@@ -100,12 +167,12 @@ export function HAProvider({ children }: { children: React.ReactNode }) {
         mainData.push(entityObj)
       }
 
-      if (isHue) {
-        hueData.push(entityObj)
+      if (isAllowedIntegration) {
+        integrationData.push(entityObj)
       }
     })
 
-    return { main: mainData, hue: hueData }
+    return { main: mainData, integration: integrationData }
   }, [])
 
   const refreshData = useCallback(async () => {
@@ -136,10 +203,10 @@ export function HAProvider({ children }: { children: React.ReactNode }) {
 
       const filteredTypLabels = labelList.filter(l => l.label_id.startsWith('typ_'))
 
-      const { main, hue } = processEntityData(entityList, deviceMap, areaMap, floorMap, stateMap, filteredTypLabels)
+      const { main, integration } = processEntityData(entityList, deviceMap, areaMap, floorMap, stateMap, filteredTypLabels)
 
       setEntities(main)
-      setHueEntities(hue)
+      setIntegrationEntities(integration)
       setAreas(areaList)
       setFloors(floorList)
       setTypLabels(filteredTypLabels)
@@ -185,29 +252,46 @@ export function HAProvider({ children }: { children: React.ReactNode }) {
     setIsConnected(false)
     setCredentials(null)
     setEntities([])
-    setHueEntities([])
+    setIntegrationEntities([])
     setAreas([])
     setFloors([])
     setTypLabels([])
+    setDeviceFilters({
+      status: 'all',
+      typ: 'all',
+      integration: 'all',
+      floor: 'all',
+      area: 'all'
+    })
+    setDeviceSearch('')
+    setDeviceSortState({ field: 'typ', direction: 'asc' })
+    setIntegrationFilters({
+      status: 'all',
+      typ: 'all',
+      integration: 'all',
+      configStatus: 'all',
+      floor: 'all',
+      area: 'all',
+      ignore: 'hidden'
+    })
+    setIntegrationSearch('')
+    setIntegrationSortState({ field: 'friendly_name', direction: 'asc' })
   }, [])
 
   const updateEntityLabels = useCallback(async (entityId: string, labels: string[]) => {
     await haClient.updateEntityLabels(entityId, labels)
-    
-    const updateEntity = (e: EntityData) => {
-      if (e.entity_id !== entityId) return e
-      const typLabel = labels.find(l => l && l.startsWith('typ_'))
-      const typ = typLabel && typLabel !== 'typ_ignore' ? typFromLabel(typLabel, typLabels) : null
-      return {
-        ...e,
-        labels,
-        typ,
-        typLabelRaw: typLabel || null
-      }
-    }
 
-    setEntities(prev => prev.map(updateEntity))
-    setHueEntities(prev => prev.map(updateEntity))
+    const typLabel = labels.find(l => l && l.startsWith('typ_'))
+    const typ = typLabel && typLabel !== 'typ_ignore' ? typFromLabel(typLabel, typLabels) : null
+    const typLabelRaw = typLabel || null
+
+    setEntities(prev => {
+      if (typLabel === 'typ_ignore') {
+        return prev.filter(e => e.entity_id !== entityId)
+      }
+      return prev.map(e => e.entity_id === entityId ? { ...e, labels, typ, typLabelRaw } : e)
+    })
+    setIntegrationEntities(prev => prev.map(e => e.entity_id === entityId ? { ...e, labels, typ, typLabelRaw } : e))
   }, [typLabels])
 
   const updateEntityName = useCallback(async (entityId: string, name: string | null) => {
@@ -219,7 +303,7 @@ export function HAProvider({ children }: { children: React.ReactNode }) {
     }
     
     setEntities(prev => prev.map(updateEntity))
-    setHueEntities(prev => prev.map(updateEntity))
+    setIntegrationEntities(prev => prev.map(updateEntity))
   }, [])
 
   const updateEntityArea = useCallback(async (entityId: string, areaId: string | null) => {
@@ -239,7 +323,7 @@ export function HAProvider({ children }: { children: React.ReactNode }) {
     }
     
     setEntities(prev => prev.map(updateEntity))
-    setHueEntities(prev => prev.map(updateEntity))
+    setIntegrationEntities(prev => prev.map(updateEntity))
   }, [areas, floors])
 
   useEffect(() => {
@@ -257,7 +341,7 @@ export function HAProvider({ children }: { children: React.ReactNode }) {
       error,
       credentials,
       entities,
-      hueEntities,
+      integrationEntities,
       areas,
       floors,
       typLabels,
@@ -266,7 +350,19 @@ export function HAProvider({ children }: { children: React.ReactNode }) {
       refreshData,
       updateEntityLabels,
       updateEntityName,
-      updateEntityArea
+      updateEntityArea,
+      deviceFilters,
+      deviceSearch,
+      deviceSort,
+      integrationFilters,
+      integrationSearch,
+      integrationSort,
+      setDeviceFilter,
+      setDeviceSearch,
+      setDeviceSort,
+      setIntegrationFilter,
+      setIntegrationSearch,
+      setIntegrationSort
     }}>
       {children}
     </HAContext.Provider>

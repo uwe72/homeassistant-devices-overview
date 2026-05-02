@@ -6,25 +6,25 @@ export default function Layout() {
   const location = useLocation()
 
   const navItems = [
-    { path: '/', label: 'Geräteübersicht' },
-    { path: '/hue', label: 'Philips Hue' },
+    { path: '/', label: 'Geräte' },
+    { path: '/integrations', label: 'Entitäten' },
     { path: '/statistics', label: 'Statistiken' }
   ]
 
   return (
-    <div className="min-h-screen bg-[#0f1419]">
-      <header className="fixed top-0 left-0 right-0 z-50 bg-[#1a2028] border-b border-[#2d3748] shadow-lg">
+    <div className="h-screen flex flex-col bg-[#1c1c1e]">
+      <header className="flex-shrink-0 bg-[#1c1c1e] border-b border-[#2c2c2e] shadow-lg">
         <div className="max-w-7xl mx-auto px-4 py-2">
           <div className="flex items-center justify-between">
             <RouterLink to="/" className="flex items-center gap-3">
               <svg width="44" height="44" viewBox="0 0 44 44" className="drop-shadow-lg">
-                <circle cx="22" cy="22" r="20" fill="#4fc3f7"/>
-                <circle cx="22" cy="22" r="18" fill="none" stroke="#0f1419" strokeWidth="2"/>
-                <path d="M22 10 L22 34" stroke="#0f1419" strokeWidth="3" strokeLinecap="round"/>
-                <path d="M10 22 L34 22" stroke="#0f1419" strokeWidth="3" strokeLinecap="round"/>
-                <circle cx="22" cy="22" r="4" fill="#0f1419"/>
+                <circle cx="22" cy="22" r="20" fill="#0A84FF"/>
+                <circle cx="22" cy="22" r="18" fill="none" stroke="#1c1c1e" strokeWidth="2"/>
+                <path d="M22 10 L22 34" stroke="#1c1c1e" strokeWidth="3" strokeLinecap="round"/>
+                <path d="M10 22 L34 22" stroke="#1c1c1e" strokeWidth="3" strokeLinecap="round"/>
+                <circle cx="22" cy="22" r="4" fill="#1c1c1e"/>
               </svg>
-              <span className="text-xl font-bold text-[#4fc3f7]">
+              <span className="text-xl font-bold text-[#0A84FF]">
                 HA Device Manager
               </span>
             </RouterLink>
@@ -37,8 +37,8 @@ export default function Layout() {
                     to={item.path}
                     className={`transition-colors ${
                       location.pathname === item.path
-                        ? 'text-[#4fc3f7] font-medium'
-                        : 'text-[#a0aec0] hover:text-[#4fc3f7]'
+                        ? 'text-[#0A84FF] font-medium'
+                        : 'text-[#9a9a9a] hover:text-[#0A84FF]'
                     }`}
                   >
                     {item.label}
@@ -50,12 +50,12 @@ export default function Layout() {
             <div className="flex items-center gap-4">
               {isConnected && (
                 <>
-                  <span className="text-sm text-[#a0aec0]">
+                  <span className="text-sm text-[#9a9a9a]">
                     Verbunden mit {credentials?.url}
                   </span>
                   <button
                     onClick={disconnect}
-                    className="px-3 py-1 text-sm bg-[#242d38] hover:bg-[#2d3748] border border-[#3d4a5c] rounded text-[#f5f5f5] transition-colors"
+                    className="px-3 py-1 text-sm bg-[#2c2c2e] hover:bg-[#3c3c3e] border border-[#3c3c3e] rounded text-[#ffffff] transition-colors"
                   >
                     Trennen
                   </button>
@@ -66,7 +66,7 @@ export default function Layout() {
                         window.open(url + '/config/entities', '_blank')
                       }
                     }}
-                    className="px-3 py-1 text-sm bg-[#242d38] hover:bg-[#2d3748] border border-[#3d4a5c] rounded text-[#f5f5f5] transition-colors"
+                    className="px-3 py-1 text-sm bg-[#2c2c2e] hover:bg-[#3c3c3e] border border-[#3c3c3e] rounded text-[#ffffff] transition-colors"
                   >
                     HA öffnen
                   </button>
@@ -77,7 +77,7 @@ export default function Layout() {
         </div>
       </header>
 
-      <main className="px-4 py-8 pt-20">
+      <main className="flex-1 overflow-hidden px-4 py-4">
         <Outlet />
       </main>
     </div>

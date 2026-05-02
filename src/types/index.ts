@@ -77,12 +77,24 @@ export interface WSResult {
   result?: unknown
 }
 
-export interface FilterState {
+export type FilterState = {
   status: string
   typ: string
   integration: string
   floor: string
   area: string
+  [key: string]: string
+}
+
+export type IntegrationFilterState = {
+  status: string
+  typ: string
+  integration: string
+  configStatus: string
+  floor: string
+  area: string
+  ignore: string
+  [key: string]: string
 }
 
 export type SortDirection = 'asc' | 'desc'

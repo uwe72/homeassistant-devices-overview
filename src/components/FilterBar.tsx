@@ -5,6 +5,7 @@ interface FilterBarProps {
   availableFilters: Record<string, string[]>
   onFilterChange: (category: string, value: string) => void
   dynamicFilters?: Record<string, string[]>
+  excludeFilters?: string[]
 }
 
 const FILTER_CONFIG: Record<string, { label: string; icon: string }> = {
@@ -28,37 +29,39 @@ const DROPDOWN_CATEGORIES = new Set(['area', 'floor', 'typ', 'integration', 'sta
 
 const VALUE_COLORS: Record<string, Record<string, string>> = {
   status: {
-    online: 'bg-[#4a9f6e20] text-[#4a9f6e] border-[#4a9f6e]',
-    offline: 'bg-[#e0525220] text-[#e05252] border-[#e05252]'
+    online: 'bg-[#0F3D1E] text-[#30D158] border-[#30D158]',
+    offline: 'bg-[#3D0606] text-[#FF453A] border-[#FF453A]'
   },
   configStatus: {
-    complete: 'bg-[#4a9f6e20] text-[#4a9f6e] border-[#4a9f6e]',
-    incomplete: 'bg-[#e0525220] text-[#e05252] border-[#e05252]'
+    complete: 'bg-[#0F3D1E] text-[#30D158] border-[#30D158]',
+    incomplete: 'bg-[#3D0606] text-[#FF453A] border-[#FF453A]'
   }
 }
 
-export default function FilterBar({ filters, availableFilters, onFilterChange, dynamicFilters }: FilterBarProps) {
+export default function FilterBar({ filters, availableFilters, onFilterChange, dynamicFilters, excludeFilters = [] }: FilterBarProps) {
   const filterGroups = useMemo(() => {
-    return Object.entries(availableFilters).map(([category, values]) => ({
-      category,
-      config: FILTER_CONFIG[category] || { label: category, icon: '' },
-      values: dynamicFilters?.[category] || values
-    }))
-  }, [availableFilters, dynamicFilters])
+    return Object.entries(availableFilters)
+      .filter(([category]) => !excludeFilters.includes(category))
+      .map(([category, values]) => ({
+        category,
+        config: FILTER_CONFIG[category] || { label: category, icon: '' },
+        values: dynamicFilters?.[category] || values
+      }))
+  }, [availableFilters, dynamicFilters, excludeFilters])
 
   return (
-    <div className="bg-[#1a2028] border border-[#2d3748] rounded-lg p-4">
+    <div className="bg-[#1c1c1e] border border-[#2c2c2e] rounded-lg p-4">
       <div className="flex flex-wrap gap-x-8 gap-y-4">
         {filterGroups.map(({ category, config, values }) => (
           <div key={category} className="flex items-center gap-3">
-            <span className="text-xs font-semibold text-[#6b7280] uppercase tracking-wider min-w-[80px]">
+            <span className="text-xs font-semibold text-[#4a4a4a] uppercase tracking-wider min-w-[80px]">
               {config.label}
             </span>
             {DROPDOWN_CATEGORIES.has(category) ? (
               <select
                 value={filters[category]}
                 onChange={(e) => onFilterChange(category, e.target.value)}
-                className="px-3 py-1.5 text-xs rounded-lg border border-[#2d3748] bg-[#0f1419] text-[#a0aec0] focus:outline-none focus:border-[#4fc3f7] cursor-pointer"
+                className="px-3 py-1.5 text-xs rounded-lg border border-[#2c2c2e] bg-[#1c1c1e] text-[#9a9a9a] focus:outline-none focus:border-[#0A84FF] cursor-pointer"
               >
                 <option value="all">Alle</option>
                 {values.map(value => (
@@ -73,8 +76,8 @@ export default function FilterBar({ filters, availableFilters, onFilterChange, d
                   onClick={() => onFilterChange(category, 'all')}
                   className={`px-3 py-1.5 text-xs rounded-full border transition-all ${
                     filters[category] === 'all'
-                      ? 'bg-[#4fc3f720] text-[#4fc3f7] border-[#4fc3f7] font-medium'
-                      : 'bg-[#0f1419] text-[#6b7280] border-[#2d3748] hover:border-[#4fc3f7] hover:text-[#a0aec0]'
+                      ? 'bg-[#0A84FF20] text-[#0A84FF] border-[#0A84FF] font-medium'
+                      : 'bg-[#1c1c1e] text-[#4a4a4a] border-[#2c2c2e] hover:border-[#0A84FF] hover:text-[#9a9a9a]'
                   }`}
                 >
                   Alle
@@ -92,8 +95,8 @@ export default function FilterBar({ filters, availableFilters, onFilterChange, d
                         isActive
                           ? colorClasses
                             ? `${colorClasses} font-medium`
-                            : 'bg-[#4fc3f720] text-[#4fc3f7] border-[#4fc3f7] font-medium'
-                          : 'bg-[#0f1419] text-[#6b7280] border-[#2d3748] hover:border-[#4fc3f7] hover:text-[#a0aec0]'
+                            : 'bg-[#0A84FF20] text-[#0A84FF] border-[#0A84FF] font-medium'
+                          : 'bg-[#1c1c1e] text-[#4a4a4a] border-[#2c2c2e] hover:border-[#0A84FF] hover:text-[#9a9a9a]'
                       }`}
                     >
                       {displayLabel}

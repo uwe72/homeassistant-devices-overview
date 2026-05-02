@@ -14,25 +14,25 @@ export default function ConfigPanel() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0f1419] flex items-center justify-center">
-      <div className="bg-[#1a2028] border border-[#2d3748] rounded-lg p-8 max-w-lg w-full mx-4">
+    <div className="min-h-screen bg-[#1c1c1e] flex items-center justify-center">
+      <div className="bg-[#1c1c1e] border border-[#2c2c2e] rounded-lg p-8 max-w-lg w-full mx-4">
         <div className="flex items-center gap-3 mb-6">
           <svg width="40" height="40" viewBox="0 0 44 44">
-            <circle cx="22" cy="22" r="20" fill="#4fc3f7"/>
-            <circle cx="22" cy="22" r="18" fill="none" stroke="#0f1419" strokeWidth="2"/>
-            <path d="M22 10 L22 34" stroke="#0f1419" strokeWidth="3" strokeLinecap="round"/>
-            <path d="M10 22 L34 22" stroke="#0f1419" strokeWidth="3" strokeLinecap="round"/>
-            <circle cx="22" cy="22" r="4" fill="#0f1419"/>
+            <circle cx="22" cy="22" r="20" fill="#0A84FF"/>
+            <circle cx="22" cy="22" r="18" fill="none" stroke="#1c1c1e" strokeWidth="2"/>
+            <path d="M22 10 L22 34" stroke="#1c1c1e" strokeWidth="3" strokeLinecap="round"/>
+            <path d="M10 22 L34 22" stroke="#1c1c1e" strokeWidth="3" strokeLinecap="round"/>
+            <circle cx="22" cy="22" r="4" fill="#1c1c1e"/>
           </svg>
           <div>
-            <h1 className="text-2xl font-bold text-[#4fc3f7]">HA Device Manager</h1>
-            <p className="text-sm text-[#6b7280]">Home Assistant Geräteverwaltung</p>
+            <h1 className="text-2xl font-bold text-[#0A84FF]">HA Device Manager</h1>
+            <p className="text-sm text-[#4a4a4a]">Home Assistant Geräteverwaltung</p>
           </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-[#a0aec0] mb-2">
+            <label className="block text-sm font-medium text-[#9a9a9a] mb-2">
               Home Assistant URL
             </label>
             <input
@@ -40,12 +40,12 @@ export default function ConfigPanel() {
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               placeholder="https://your-ha-instance.com"
-              className="w-full px-4 py-2 bg-[#0f1419] border border-[#2d3748] rounded-lg text-[#f5f5f5] placeholder-[#6b7280] focus:outline-none focus:border-[#4fc3f7]"
+              className="w-full px-4 py-2 bg-[#1c1c1e] border border-[#2c2c2e] rounded-lg text-[#ffffff] placeholder-[#4a4a4a] focus:outline-none focus:border-[#0A84FF]"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-[#a0aec0] mb-2">
+            <label className="block text-sm font-medium text-[#9a9a9a] mb-2">
               Long-Lived Access Token
             </label>
             <input
@@ -53,12 +53,12 @@ export default function ConfigPanel() {
               value={token}
               onChange={(e) => setToken(e.target.value)}
               placeholder="Dein Access Token"
-              className="w-full px-4 py-2 bg-[#0f1419] border border-[#2d3748] rounded-lg text-[#f5f5f5] placeholder-[#6b7280] focus:outline-none focus:border-[#4fc3f7]"
+              className="w-full px-4 py-2 bg-[#1c1c1e] border border-[#2c2c2e] rounded-lg text-[#ffffff] placeholder-[#4a4a4a] focus:outline-none focus:border-[#0A84FF]"
             />
           </div>
 
           {error && (
-            <div className="px-4 py-3 bg-[#e0525220] border border-[#e05252] rounded-lg text-[#e05252] text-sm">
+            <div className="px-4 py-3 bg-[#3D0606] border border-[#FF453A] rounded-lg text-[#FF453A] text-sm">
               {error}
             </div>
           )}
@@ -66,13 +66,13 @@ export default function ConfigPanel() {
           <button
             type="submit"
             disabled={isLoading || !url || !token}
-            className="w-full py-2 px-4 bg-[#4fc3f7] hover:bg-[#4fc3f7dd] text-[#0f1419] font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="w-full py-2 px-4 bg-[#0A84FF] hover:bg-[#3a9bff] text-[#ffffff] font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {isLoading ? 'Verbinde...' : 'Verbinden'}
           </button>
         </form>
 
-        <div className="mt-6 text-xs text-[#6b7280]">
+        <div className="mt-6 text-xs text-[#4a4a4a]">
           <p>Token erstellen: Home Assistant → Profil → Sicherheit → Long-Lived Access Tokens</p>
         </div>
       </div>

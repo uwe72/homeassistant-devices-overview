@@ -61,7 +61,7 @@ export class HAClient {
     } else if (msg.type === 'auth_invalid') {
       this.onAuthError?.('Authentifizierung fehlgeschlagen!')
     } else if (msg.type === 'result') {
-      const result = msg as WSResult
+      const result = msg as unknown as WSResult
       const pending = this.pendingRequests.get(result.id)
       if (pending) {
         pending.resolve(result)
