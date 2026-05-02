@@ -34,7 +34,7 @@ export default function HueTable() {
     configStatus: 'all',
     floor: 'all',
     area: 'all',
-    ignore: 'all'
+    ignore: 'hidden'
   })
   const [sort, setSort] = useState<SortState>({ field: 'friendly_name', direction: 'asc' })
   const [editingId, setEditingId] = useState<string | null>(null)

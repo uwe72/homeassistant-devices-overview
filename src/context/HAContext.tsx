@@ -72,8 +72,9 @@ export function HAProvider({ children }: { children: React.ReactNode }) {
       const isHue = e.platform === 'hue'
 
       const typLabel = labels.find(l => l && l.startsWith('typ_'))
-      const typ = typLabel && typLabel !== 'typ_ignore' ? typFromLabel(typLabel, labelRegistry) : null
-      const hasTypLabel = typLabel !== undefined && typLabel !== 'typ_ignore'
+      const isValidTypLabel = typLabel && labelRegistry.some(l => l.label_id === typLabel)
+      const typ = isValidTypLabel && typLabel !== 'typ_ignore' ? typFromLabel(typLabel, labelRegistry) : null
+      const hasTypLabel = isValidTypLabel && typLabel !== 'typ_ignore'
 
       const displayName = e.name || e.original_name || (state.attributes?.friendly_name as string) || e.entity_id
       const isOnline = state.state !== 'unavailable'
@@ -92,7 +93,7 @@ export function HAProvider({ children }: { children: React.ReactNode }) {
         floor_id: area?.floor_id || null,
         labels,
         typ,
-        typLabelRaw: typLabel || null
+        typLabelRaw: isValidTypLabel ? typLabel : null
       }
 
       if (hasTypLabel) {
