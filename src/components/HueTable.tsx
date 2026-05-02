@@ -12,24 +12,6 @@ function StatusDot({ online }: { online: boolean }) {
   )
 }
 
-const TYP_LABELS = [
-  'typ_licht',
-  'typ_sensor',
-  'typ_schalter',
-  'typ_bewegungsmelder',
-  'typ_ignore'
-]
-
-function typDisplayName(label: string): string {
-  const map: Record<string, string> = {
-    'typ_licht': 'Licht',
-    'typ_sensor': 'Sensor',
-    'typ_schalter': 'Schalter',
-    'typ_bewegungsmelder': 'Bewegungsmelder',
-    'typ_ignore': 'Ignorieren'
-  }
-  return map[label] || label.replace('typ_', '')
-}
 
 function getConfigStatus(entity: EntityData, currentFloorId: string | null): { isComplete: boolean; missing: string[] } {
   const missing: string[] = []
@@ -44,7 +26,7 @@ function getConfigStatus(entity: EntityData, currentFloorId: string | null): { i
 }
 
 export default function HueTable() {
-  const { hueEntities, areas, floors, updateEntityLabels, updateEntityName, updateEntityArea } = useHA()
+  const { hueEntities, areas, floors, typLabels, updateEntityLabels, updateEntityName, updateEntityArea } = useHA()
   const [search, setSearch] = useState('')
   const [filters, setFilters] = useState({
     status: 'all',
@@ -57,6 +39,8 @@ export default function HueTable() {
   const [sort, setSort] = useState<SortState>({ field: 'friendly_name', direction: 'asc' })
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editValue, setEditValue] = useState('')
+  const [bulkLabel, setBulkLabel] = useState('')
+  const [pendingFloor, setPendingFloor] = useState<Record<string, string>>({})
 
   const availableAreas = useMemo(() => {
     if (filters.floor === 'all') {
@@ -169,6 +153,21 @@ export default function HueTable() {
     await updateEntityLabels(entityId, labels)
   }
 
+  const handleBulkLabel = async () => {
+    if (!bulkLabel) return
+    const labelName = typLabels.find(l => l.label_id === bulkLabel)?.name || bulkLabel
+    const toUpdate = filteredEntities.filter(e => e.typLabelRaw !== bulkLabel)
+    if (toUpdate.length === 0) return
+    if (!window.confirm(`${toUpdate.length} Entität(en) auf "${labelName}" setzen?`)) return
+    for (const entity of toUpdate) {
+      const labels = entity.typLabelRaw
+        ? entity.labels.filter(l => l !== entity.typLabelRaw)
+        : [...entity.labels]
+      labels.push(bulkLabel)
+      await updateEntityLabels(entity.entity_id, labels)
+    }
+  }
+
   const handleAreaChange = async (entityId: string, areaId: string) => {
     await updateEntityArea(entityId, areaId || null)
   }
@@ -215,6 +214,27 @@ export default function HueTable() {
           placeholder="Hue Entitäten suchen..."
           className="flex-1 px-4 py-2 bg-[#1a2028] border border-[#2d3748] rounded-lg text-[#f5f5f5] placeholder-[#6b7280] focus:outline-none focus:border-[#4fc3f7]"
         />
+        <select
+          value={bulkLabel}
+          onChange={(e) => setBulkLabel(e.target.value)}
+          className="px-3 py-2 text-xs bg-[#1a2028] border border-[#2d3748] rounded-lg text-[#f5f5f5] focus:outline-none focus:border-[#4fc3f7]"
+        >
+          <option value="">Typ wählen…</option>
+          {typLabels.map(label => (
+            <option key={label.label_id} value={label.label_id}>{label.name}</option>
+          ))}
+        </select>
+        <button
+          onClick={handleBulkLabel}
+          disabled={!bulkLabel}
+          className={`px-4 py-2 text-xs font-medium rounded-lg border transition-colors whitespace-nowrap ${
+            bulkLabel
+              ? 'border-[#4fc3f7] bg-[#4fc3f720] text-[#4fc3f7] hover:bg-[#4fc3f740]'
+              : 'border-[#2d3748] bg-[#1a2028] text-[#6b7280] cursor-not-allowed'
+          }`}
+        >
+          Allen Zeilen zuweisen
+        </button>
       </div>
 
       <FilterBar
@@ -230,13 +250,13 @@ export default function HueTable() {
               <tr className="bg-[#0f1419] border-b border-[#2d3748]">
                 {[
                   { key: 'configStatus', label: 'Konfiguration' },
-                  { key: 'typ', label: 'Typ' },
                   { key: 'online', label: 'Status' },
                   { key: 'floor', label: 'Bereich' },
                   { key: 'area', label: 'Raum' },
                   { key: 'friendly_name', label: 'Device' },
-                  { key: 'labels', label: 'Labels' },
+                  { key: 'labels', label: 'Typ' },
                   { key: 'entity_id', label: 'Entity ID' },
+                  { key: 'state', label: 'Wert' },
                 ].map(col => (
                   <th
                     key={col.key}
@@ -250,7 +270,8 @@ export default function HueTable() {
             </thead>
             <tbody>
               {filteredEntities.map(entity => {
-                const currentFloorId = entity.area_id ? areaToFloorMap[entity.area_id] : null
+                const floorFromArea = entity.area_id ? areaToFloorMap[entity.area_id] : null
+                const currentFloorId = floorFromArea || pendingFloor[entity.entity_id] || null
                 const availableAreas = currentFloorId && floorToAreasMap[currentFloorId]
                   ? floorToAreasMap[currentFloorId].map(aid => areas.find(a => a.area_id === aid)).filter(Boolean)
                   : areas
@@ -270,19 +291,6 @@ export default function HueTable() {
                       )}
                     </td>
                     <td className="px-4 py-2">
-                      {entity.typLabelRaw === 'typ_ignore' ? (
-                        <span className="px-2 py-1 bg-[#ffffff10] text-[#f5f5f5] rounded-full text-xs">
-                          Ignorieren
-                        </span>
-                      ) : entity.typ ? (
-                        <span className="px-2 py-1 bg-[#ffffff10] text-[#f5f5f5] rounded-full text-xs">
-                          {entity.typ}
-                        </span>
-                      ) : (
-                        <span className="text-[#6b7280]">-</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-2">
                       <StatusDot online={entity.online} />
                     </td>
                     <td className="px-4 py-2">
@@ -291,9 +299,16 @@ export default function HueTable() {
                         onChange={(e) => {
                           const floorId = e.target.value
                           const floorAreas = floorToAreasMap[floorId] || []
-                          if (floorAreas.length > 0 && !floorAreas.includes(entity.area_id || '')) {
-                            handleAreaChange(entity.entity_id, floorAreas[0])
+                          if (!floorAreas.includes(entity.area_id || '')) {
+                            handleAreaChange(entity.entity_id, '')
                           }
+                          setPendingFloor(prev => {
+                            if (!floorId) {
+                              const { [entity.entity_id]: _, ...rest } = prev
+                              return rest
+                            }
+                            return { ...prev, [entity.entity_id]: floorId }
+                          })
                         }}
                         className={`px-2 py-1 bg-[#0f1419] border rounded text-xs text-[#f5f5f5] min-w-[120px] ${
                           !currentFloorId ? 'border-[#e05252]' : 'border-[#2d3748]'
@@ -308,7 +323,13 @@ export default function HueTable() {
                     <td className="px-4 py-2">
                       <select
                         value={entity.area_id || ''}
-                        onChange={(e) => handleAreaChange(entity.entity_id, e.target.value)}
+                        onChange={(e) => {
+                          handleAreaChange(entity.entity_id, e.target.value)
+                          setPendingFloor(prev => {
+                            const { [entity.entity_id]: _, ...rest } = prev
+                            return rest
+                          })
+                        }}
                         className={`px-2 py-1 bg-[#0f1419] border rounded text-xs text-[#f5f5f5] min-w-[120px] ${
                           !entity.area_id ? 'border-[#e05252]' : 'border-[#2d3748]'
                         }`}
@@ -361,8 +382,8 @@ export default function HueTable() {
                         }`}
                       >
                         <option value="">- Kein Typ -</option>
-                        {TYP_LABELS.map(label => (
-                          <option key={label} value={label}>{typDisplayName(label)}</option>
+                        {typLabels.map(label => (
+                          <option key={label.label_id} value={label.label_id}>{label.name}</option>
                         ))}
                       </select>
                     </td>
@@ -373,6 +394,9 @@ export default function HueTable() {
                       >
                         {entity.entity_id}
                       </span>
+                    </td>
+                    <td className="px-4 py-2 text-xs text-[#a0aec0]">
+                      {entity.state}
                     </td>
                   </tr>
                 )

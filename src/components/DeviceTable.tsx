@@ -18,6 +18,7 @@ export default function DeviceTable() {
   const [filters, setFilters] = useState({
     status: 'all',
     typ: 'all',
+    integration: 'all',
     floor: 'all',
     area: 'all'
   })
@@ -27,18 +28,23 @@ export default function DeviceTable() {
 
   const availableFilters = useMemo(() => {
     const types = new Set<string>()
+    const integrations = new Set<string>()
     const floorNames = new Set<string>()
     const areaNames = new Set<string>()
+    let hasIgnore = false
 
     entities.forEach(e => {
       if (e.typ) types.add(e.typ)
+      if (e.typLabelRaw === 'typ_ignore') hasIgnore = true
+      if (e.integration) integrations.add(e.integration)
       if (e.floor !== '—') floorNames.add(e.floor)
       if (e.area !== '—') areaNames.add(e.area)
     })
 
     return {
       status: ['online', 'offline'],
-      typ: Array.from(types).sort(),
+      typ: ['none', ...Array.from(types).sort(), ...(hasIgnore ? ['Ignorieren'] : [])],
+      integration: Array.from(integrations).sort(),
       floor: Array.from(floorNames).sort(),
       area: Array.from(areaNames).sort()
     }
@@ -54,11 +60,18 @@ export default function DeviceTable() {
       const matchStatus = filters.status === 'all' ||
         (filters.status === 'online' ? e.online : !e.online)
 
-      const matchTyp = filters.typ === 'all' || e.typ === filters.typ
+      let matchTyp = true
+      if (filters.typ === 'none') {
+        matchTyp = e.typ === null && e.typLabelRaw !== 'typ_ignore'
+      } else if (filters.typ === 'Ignorieren') {
+        matchTyp = e.typLabelRaw === 'typ_ignore'
+      } else if (filters.typ !== 'all') {
+        matchTyp = e.typ === filters.typ
+      }
+      const matchIntegration = filters.integration === 'all' || e.integration === filters.integration
       const matchFloor = filters.floor === 'all' || e.floor === filters.floor
       const matchArea = filters.area === 'all' || e.area === filters.area
-
-      return matchSearch && matchStatus && matchTyp && matchFloor && matchArea
+      return matchSearch && matchStatus && matchTyp && matchIntegration && matchFloor && matchArea
     }).sort((a, b) => {
       const va = String(a[sort.field as keyof EntityData] || '')
       const vb = String(b[sort.field as keyof EntityData] || '')
@@ -99,13 +112,6 @@ export default function DeviceTable() {
     navigator.clipboard.writeText(text)
   }
 
-  const openHA = () => {
-    const url = localStorage.getItem('ha_url')
-    if (url) {
-      window.open(url + '/config/entities', '_blank')
-    }
-  }
-
   const stats = {
     total: filteredEntities.length,
     online: filteredEntities.filter(e => e.online).length,
@@ -120,22 +126,21 @@ export default function DeviceTable() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-6">
+      <div className="flex items-center gap-4">
         <h1 className="text-xl font-semibold text-[#f5f5f5]">Geräteübersicht</h1>
         <div className="flex gap-4 text-sm">
           <span className="text-[#a0aec0]">Gesamt: <span className="text-[#4fc3f7] font-semibold">{stats.total}</span></span>
           <span className="text-[#a0aec0]">Online: <span className="text-[#4a9f6e] font-semibold">{stats.online}</span></span>
           <span className="text-[#a0aec0]">Offline: <span className="text-[#e05252] font-semibold">{stats.offline}</span></span>
         </div>
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Suchen (Name, Raum, Entity ID...)"
+          className="flex-1 px-4 py-2 bg-[#1a2028] border border-[#2d3748] rounded-lg text-[#f5f5f5] placeholder-[#6b7280] focus:outline-none focus:border-[#4fc3f7]"
+        />
       </div>
-
-      <input
-        type="text"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        placeholder="Suchen (Name, Raum, Entity ID...)"
-        className="w-full px-4 py-2 bg-[#1a2028] border border-[#2d3748] rounded-lg text-[#f5f5f5] placeholder-[#6b7280] focus:outline-none focus:border-[#4fc3f7]"
-      />
 
       <FilterBar
         filters={filters}
@@ -150,11 +155,11 @@ export default function DeviceTable() {
               <tr className="bg-[#0f1419] border-b border-[#2d3748]">
                 {[
                   { key: 'integration', label: 'Integration' },
-                  { key: 'typ', label: 'Typ' },
                   { key: 'online', label: 'Status' },
                   { key: 'floor', label: 'Bereich' },
                   { key: 'area', label: 'Raum' },
                   { key: 'friendly_name', label: 'Device' },
+                  { key: 'typ', label: 'Typ' },
                   { key: 'entity_id', label: 'Entity ID' },
                 ].map(col => (
                   <th
@@ -165,9 +170,6 @@ export default function DeviceTable() {
                     {col.label}<SortArrow field={col.key} />
                   </th>
                 ))}
-                <th className="px-4 py-3 text-left text-xs font-medium text-[#a0aec0] uppercase tracking-wider">
-                  Aktionen
-                </th>
               </tr>
             </thead>
             <tbody>
@@ -177,13 +179,6 @@ export default function DeviceTable() {
                     <span className="px-2 py-1 bg-[#4fc3f720] text-[#4fc3f7] rounded-full text-xs">
                       {entity.integration}
                     </span>
-                  </td>
-                  <td className="px-4 py-2">
-                    {entity.typ && (
-                      <span className="px-2 py-1 bg-[#4a9f6e20] text-[#4a9f6e] rounded-full text-xs">
-                        {entity.typ}
-                      </span>
-                    )}
                   </td>
                   <td className="px-4 py-2">
                     <StatusDot online={entity.online} />
@@ -217,6 +212,9 @@ export default function DeviceTable() {
                       </div>
                     )}
                   </td>
+                  <td className="px-4 py-2 text-[#f5f5f5] text-xs">
+                    {entity.typ || ''}
+                  </td>
                   <td className="px-4 py-2">
                     <span
                       onClick={() => copyToClipboard(entity.entity_id)}
@@ -225,19 +223,11 @@ export default function DeviceTable() {
                       {entity.entity_id}
                     </span>
                   </td>
-                  <td className="px-4 py-2">
-                    <button
-                      onClick={openHA}
-                      className="px-2 py-1 text-xs bg-[#242d38] hover:bg-[#2d3748] border border-[#3d4a5c] rounded text-[#a0aec0] transition-colors"
-                    >
-                      HA öffnen
-                    </button>
-                  </td>
                 </tr>
               ))}
               {filteredEntities.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="px-4 py-8 text-center text-[#6b7280]">
+                  <td colSpan={7} className="px-4 py-8 text-center text-[#6b7280]">
                     Keine Geräte gefunden
                   </td>
                 </tr>

@@ -10,6 +10,7 @@ interface FilterBarProps {
 const FILTER_CONFIG: Record<string, { label: string; icon: string }> = {
   status: { label: 'Status', icon: '●' },
   typ: { label: 'Typ', icon: '◈' },
+  integration: { label: 'Integration', icon: '⚡' },
   configStatus: { label: 'Konfiguration', icon: '⚙' },
   floor: { label: 'Bereich', icon: '⌂' },
   area: { label: 'Raum', icon: '◻' },
@@ -22,6 +23,8 @@ const VALUE_LABELS: Record<string, Record<string, string>> = {
   typ: { none: 'Kein Typ', 'Ignorieren': 'Ignorieren' },
   ignore: { hidden: 'Ausblenden' }
 }
+
+const DROPDOWN_CATEGORIES = new Set(['area', 'floor', 'typ', 'integration', 'status', 'configStatus', 'ignore'])
 
 const VALUE_COLORS: Record<string, Record<string, string>> = {
   status: {
@@ -51,39 +54,54 @@ export default function FilterBar({ filters, availableFilters, onFilterChange, d
             <span className="text-xs font-semibold text-[#6b7280] uppercase tracking-wider min-w-[80px]">
               {config.label}
             </span>
-            <div className="flex gap-2 flex-wrap">
-              <button
-                onClick={() => onFilterChange(category, 'all')}
-                className={`px-3 py-1.5 text-xs rounded-full border transition-all ${
-                  filters[category] === 'all'
-                    ? 'bg-[#4fc3f720] text-[#4fc3f7] border-[#4fc3f7] font-medium'
-                    : 'bg-[#0f1419] text-[#6b7280] border-[#2d3748] hover:border-[#4fc3f7] hover:text-[#a0aec0]'
-                }`}
+            {DROPDOWN_CATEGORIES.has(category) ? (
+              <select
+                value={filters[category]}
+                onChange={(e) => onFilterChange(category, e.target.value)}
+                className="px-3 py-1.5 text-xs rounded-lg border border-[#2d3748] bg-[#0f1419] text-[#a0aec0] focus:outline-none focus:border-[#4fc3f7] cursor-pointer"
               >
-                Alle
-              </button>
-              {values.map(value => {
-                const isActive = filters[category] === value
-                const displayLabel = VALUE_LABELS[category]?.[value] || value
-                const colorClasses = VALUE_COLORS[category]?.[value]
-                
-                return (
-                  <button
-                    key={value}
-                    onClick={() => onFilterChange(category, value)}
-                    className={`px-3 py-1.5 text-xs rounded-full border transition-all ${
-                      isActive
-                        ? colorClasses 
-                          ? `${colorClasses} font-medium`
-                          : 'bg-[#4fc3f720] text-[#4fc3f7] border-[#4fc3f7] font-medium'
-                        : 'bg-[#0f1419] text-[#6b7280] border-[#2d3748] hover:border-[#4fc3f7] hover:text-[#a0aec0]'
-                    }`}
-                  >
-                    {displayLabel}
-                  </button>
-                )
-              })}
-            </div>
+                <option value="all">Alle</option>
+                {values.map(value => (
+                  <option key={value} value={value}>
+                    {VALUE_LABELS[category]?.[value] || value}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <div className="flex gap-2 flex-wrap">
+                <button
+                  onClick={() => onFilterChange(category, 'all')}
+                  className={`px-3 py-1.5 text-xs rounded-full border transition-all ${
+                    filters[category] === 'all'
+                      ? 'bg-[#4fc3f720] text-[#4fc3f7] border-[#4fc3f7] font-medium'
+                      : 'bg-[#0f1419] text-[#6b7280] border-[#2d3748] hover:border-[#4fc3f7] hover:text-[#a0aec0]'
+                  }`}
+                >
+                  Alle
+                </button>
+                {values.map(value => {
+                  const isActive = filters[category] === value
+                  const displayLabel = VALUE_LABELS[category]?.[value] || value
+                  const colorClasses = VALUE_COLORS[category]?.[value]
+
+                  return (
+                    <button
+                      key={value}
+                      onClick={() => onFilterChange(category, value)}
+                      className={`px-3 py-1.5 text-xs rounded-full border transition-all ${
+                        isActive
+                          ? colorClasses
+                            ? `${colorClasses} font-medium`
+                            : 'bg-[#4fc3f720] text-[#4fc3f7] border-[#4fc3f7] font-medium'
+                          : 'bg-[#0f1419] text-[#6b7280] border-[#2d3748] hover:border-[#4fc3f7] hover:text-[#a0aec0]'
+                      }`}
+                    >
+                      {displayLabel}
+                    </button>
+                  )
+                })}
+              </div>
+            )}
           </div>
         ))}
       </div>

@@ -31,6 +31,11 @@ export interface HAFloor {
   level: number | null
 }
 
+export interface HALabel {
+  label_id: string
+  name: string
+}
+
 export interface HAState {
   entity_id: string
   state: string
@@ -75,6 +80,7 @@ export interface WSResult {
 export interface FilterState {
   status: string
   typ: string
+  integration: string
   floor: string
   area: string
 }

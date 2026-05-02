@@ -1,4 +1,4 @@
-import type { HAEntity, HADevice, HAArea, HAFloor, HAState, WSMessage, WSResult, HACredentials } from '../types'
+import type { HAEntity, HADevice, HAArea, HAFloor, HALabel, HAState, WSMessage, WSResult, HACredentials } from '../types'
 
 type PendingRequest = {
   resolve: (result: WSResult) => void
@@ -117,6 +117,10 @@ export class HAClient {
 
   async getFloors(): Promise<HAFloor[]> {
     return this.sendCommand<HAFloor[]>('config/floor_registry/list')
+  }
+
+  async getLabels(): Promise<HALabel[]> {
+    return this.sendCommand<HALabel[]>('config/label_registry/list')
   }
 
   async getStates(): Promise<HAState[]> {

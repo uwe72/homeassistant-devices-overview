@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react'
 import { haClient } from '../api/haClient'
-import type { HACredentials, EntityData, HAArea, HAFloor, HAEntity, HADevice, HAState } from '../types'
+import type { HACredentials, EntityData, HAArea, HAFloor, HALabel, HAEntity, HADevice, HAState } from '../types'
 
 interface HAContextType {
   isConnected: boolean
@@ -11,6 +11,7 @@ interface HAContextType {
   hueEntities: EntityData[]
   areas: HAArea[]
   floors: HAFloor[]
+  typLabels: HALabel[]
   connect: (creds: HACredentials) => Promise<void>
   disconnect: () => void
   refreshData: () => Promise<void>
@@ -31,17 +32,12 @@ const INTEGRATION_MAP: Record<string, string> = {
   'group': 'Gruppe'
 }
 
-function typFromLabel(label: string | null): string | null {
+function typFromLabel(label: string | null, labelRegistry: HALabel[]): string | null {
   if (!label || !label.startsWith('typ_')) return null
+  const entry = labelRegistry.find(l => l.label_id === label)
+  if (entry) return entry.name
   const raw = label.replace('typ_', '')
-  const map: Record<string, string> = {
-    'licht': 'Licht',
-    'sensor': 'Sensor',
-    'schalter': 'Schalter',
-    'bewegungsmelder': 'Bewegungsmelder',
-    'ignore': 'Ignorieren'
-  }
-  return map[raw] || raw.charAt(0).toUpperCase() + raw.slice(1)
+  return raw.charAt(0).toUpperCase() + raw.slice(1)
 }
 
 export function HAProvider({ children }: { children: React.ReactNode }) {
@@ -53,13 +49,15 @@ export function HAProvider({ children }: { children: React.ReactNode }) {
   const [hueEntities, setHueEntities] = useState<EntityData[]>([])
   const [areas, setAreas] = useState<HAArea[]>([])
   const [floors, setFloors] = useState<HAFloor[]>([])
+  const [typLabels, setTypLabels] = useState<HALabel[]>([])
 
   const processEntityData = useCallback((
     entityList: HAEntity[],
     deviceMap: Record<string, HADevice>,
     areaMap: Record<string, HAArea>,
     floorMap: Record<string, HAFloor>,
-    stateMap: Record<string, HAState>
+    stateMap: Record<string, HAState>,
+    labelRegistry: HALabel[]
   ): { main: EntityData[], hue: EntityData[] } => {
     const mainData: EntityData[] = []
     const hueData: EntityData[] = []
@@ -74,7 +72,7 @@ export function HAProvider({ children }: { children: React.ReactNode }) {
       const isHue = e.platform === 'hue'
 
       const typLabel = labels.find(l => l && l.startsWith('typ_'))
-      const typ = typLabel && typLabel !== 'typ_ignore' ? typFromLabel(typLabel) : null
+      const typ = typLabel && typLabel !== 'typ_ignore' ? typFromLabel(typLabel, labelRegistry) : null
       const hasTypLabel = typLabel !== undefined && typLabel !== 'typ_ignore'
 
       const displayName = e.name || e.original_name || (state.attributes?.friendly_name as string) || e.entity_id
@@ -114,11 +112,12 @@ export function HAProvider({ children }: { children: React.ReactNode }) {
 
     setIsLoading(true)
     try {
-      const [entityList, deviceList, areaList, floorList, stateList] = await Promise.all([
+      const [entityList, deviceList, areaList, floorList, labelList, stateList] = await Promise.all([
         haClient.getEntities(),
         haClient.getDevices(),
         haClient.getAreas(),
         haClient.getFloors(),
+        haClient.getLabels(),
         haClient.getStates()
       ])
 
@@ -134,12 +133,15 @@ export function HAProvider({ children }: { children: React.ReactNode }) {
       const stateMap: Record<string, HAState> = {}
       stateList.forEach(s => { stateMap[s.entity_id] = s })
 
-      const { main, hue } = processEntityData(entityList, deviceMap, areaMap, floorMap, stateMap)
+      const filteredTypLabels = labelList.filter(l => l.label_id.startsWith('typ_'))
+
+      const { main, hue } = processEntityData(entityList, deviceMap, areaMap, floorMap, stateMap, filteredTypLabels)
 
       setEntities(main)
       setHueEntities(hue)
       setAreas(areaList)
       setFloors(floorList)
+      setTypLabels(filteredTypLabels)
     } catch (err) {
       setError('Fehler beim Laden der Daten')
       console.error(err)
@@ -185,6 +187,7 @@ export function HAProvider({ children }: { children: React.ReactNode }) {
     setHueEntities([])
     setAreas([])
     setFloors([])
+    setTypLabels([])
   }, [])
 
   const updateEntityLabels = useCallback(async (entityId: string, labels: string[]) => {
@@ -193,7 +196,7 @@ export function HAProvider({ children }: { children: React.ReactNode }) {
     const updateEntity = (e: EntityData) => {
       if (e.entity_id !== entityId) return e
       const typLabel = labels.find(l => l && l.startsWith('typ_'))
-      const typ = typLabel && typLabel !== 'typ_ignore' ? typFromLabel(typLabel) : null
+      const typ = typLabel && typLabel !== 'typ_ignore' ? typFromLabel(typLabel, typLabels) : null
       return {
         ...e,
         labels,
@@ -201,10 +204,10 @@ export function HAProvider({ children }: { children: React.ReactNode }) {
         typLabelRaw: typLabel || null
       }
     }
-    
+
     setEntities(prev => prev.map(updateEntity))
     setHueEntities(prev => prev.map(updateEntity))
-  }, [])
+  }, [typLabels])
 
   const updateEntityName = useCallback(async (entityId: string, name: string | null) => {
     await haClient.updateEntityName(entityId, name)
@@ -256,6 +259,7 @@ export function HAProvider({ children }: { children: React.ReactNode }) {
       hueEntities,
       areas,
       floors,
+      typLabels,
       connect,
       disconnect,
       refreshData,
