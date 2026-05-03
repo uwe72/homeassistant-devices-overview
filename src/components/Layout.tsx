@@ -18,12 +18,16 @@ export default function Layout() {
         <div className="max-w-7xl mx-auto px-4 py-2">
           <div className="flex items-center justify-between">
             <RouterLink to="/" className="flex items-center gap-3">
-              <svg width="44" height="44" viewBox="0 0 44 44" className="drop-shadow-lg">
-                <circle cx="22" cy="22" r="20" fill="#00A5CB"/>
-                <circle cx="22" cy="22" r="18" fill="none" stroke="#1c1c1e" strokeWidth="2"/>
-                <path d="M22 10 L22 34" stroke="#1c1c1e" strokeWidth="3" strokeLinecap="round"/>
-                <path d="M10 22 L34 22" stroke="#1c1c1e" strokeWidth="3" strokeLinecap="round"/>
-                <circle cx="22" cy="22" r="4" fill="#1c1c1e"/>
+              <svg width="24" height="24" viewBox="0 0 24 24" className="drop-shadow-lg">
+                <rect x="2" y="2" width="6" height="6" rx="1" fill="#00A5CB"/>
+                <rect x="9" y="2" width="6" height="6" rx="1" fill="#00A5CB"/>
+                <rect x="16" y="2" width="6" height="6" rx="1" fill="#00A5CB"/>
+                <rect x="2" y="9" width="6" height="6" rx="1" fill="#00A5CB"/>
+                <rect x="9" y="9" width="6" height="6" rx="1" fill="#00A5CB"/>
+                <rect x="16" y="9" width="6" height="6" rx="1" fill="#00A5CB"/>
+                <rect x="2" y="16" width="6" height="6" rx="1" fill="#00A5CB"/>
+                <rect x="9" y="16" width="6" height="6" rx="1" fill="#00A5CB"/>
+                <rect x="16" y="16" width="6" height="6" rx="1" fill="#00A5CB"/>
               </svg>
               <span className="text-xl font-bold text-[#00A5CB]">
                 HA Device Manager

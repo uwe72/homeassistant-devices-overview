@@ -17,12 +17,16 @@ export default function ConfigPanel() {
     <div className="min-h-screen bg-[#1c1c1e] flex items-center justify-center">
       <div className="bg-[#1c1c1e] border border-[#2c2c2e] rounded-lg p-8 max-w-lg w-full mx-4">
         <div className="flex items-center gap-3 mb-6">
-          <svg width="40" height="40" viewBox="0 0 44 44">
-            <circle cx="22" cy="22" r="20" fill="#00A5CB"/>
-            <circle cx="22" cy="22" r="18" fill="none" stroke="#1c1c1e" strokeWidth="2"/>
-            <path d="M22 10 L22 34" stroke="#1c1c1e" strokeWidth="3" strokeLinecap="round"/>
-            <path d="M10 22 L34 22" stroke="#1c1c1e" strokeWidth="3" strokeLinecap="round"/>
-            <circle cx="22" cy="22" r="4" fill="#1c1c1e"/>
+          <svg width="28" height="28" viewBox="0 0 24 24">
+            <rect x="2" y="2" width="6" height="6" rx="1" fill="#00A5CB"/>
+            <rect x="9" y="2" width="6" height="6" rx="1" fill="#00A5CB"/>
+            <rect x="16" y="2" width="6" height="6" rx="1" fill="#00A5CB"/>
+            <rect x="2" y="9" width="6" height="6" rx="1" fill="#00A5CB"/>
+            <rect x="9" y="9" width="6" height="6" rx="1" fill="#00A5CB"/>
+            <rect x="16" y="9" width="6" height="6" rx="1" fill="#00A5CB"/>
+            <rect x="2" y="16" width="6" height="6" rx="1" fill="#00A5CB"/>
+            <rect x="9" y="16" width="6" height="6" rx="1" fill="#00A5CB"/>
+            <rect x="16" y="16" width="6" height="6" rx="1" fill="#00A5CB"/>
           </svg>
           <div>
             <h1 className="text-2xl font-bold text-[#00A5CB]">HA Device Manager</h1>
