@@ -59,10 +59,18 @@ Die Anwendung läuft auf http://localhost:5174
 - Geräte pro Typ, Bereich und Raum
 - Hue-spezifische Statistiken
 
-## Build
-
+## Docker
 ```bash
-npm run build
-```
+services:
 
-Die gebaute Anwendung liegt im `dist` Ordner.
+  ha-devices-overview:
+    image: ghcr.io/uwe72/homeassistant-devices-overview:latest
+    container_name: ha-devices-overview
+    ports:
+      - "5174:80"
+    restart: unless-stopped
+```
+```bash
+pull ghcr.io/uwe72/homeassistant-devices-overview:latest
+docker compose up -d ha-devices-overview
+```
