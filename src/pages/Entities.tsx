@@ -34,8 +34,8 @@ export default function Entities() {
             onClick={() => setActiveTab(tab.id)}
             className={`px-4 py-2 text-sm font-medium rounded-t-lg border border-b-0 transition-colors ${
               activeTab === tab.id
-                ? 'bg-[#2c2c2e] text-[#0A84FF] border-[#3c3c3e]'
-                : 'bg-[#1c1c1e] text-[#9a9a9a] border-[#2c2c2e] hover:text-[#0A84FF]'
+                ? 'bg-[#2c2c2e] text-[#00A5CB] border-[#3c3c3e]'
+                : 'bg-[#1c1c1e] text-[#9a9a9a] border-[#2c2c2e] hover:text-[#00A5CB]'
             }`}
           >
             {tab.label}

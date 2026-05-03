@@ -18,14 +18,14 @@ export default function ConfigPanel() {
       <div className="bg-[#1c1c1e] border border-[#2c2c2e] rounded-lg p-8 max-w-lg w-full mx-4">
         <div className="flex items-center gap-3 mb-6">
           <svg width="40" height="40" viewBox="0 0 44 44">
-            <circle cx="22" cy="22" r="20" fill="#0A84FF"/>
+            <circle cx="22" cy="22" r="20" fill="#00A5CB"/>
             <circle cx="22" cy="22" r="18" fill="none" stroke="#1c1c1e" strokeWidth="2"/>
             <path d="M22 10 L22 34" stroke="#1c1c1e" strokeWidth="3" strokeLinecap="round"/>
             <path d="M10 22 L34 22" stroke="#1c1c1e" strokeWidth="3" strokeLinecap="round"/>
             <circle cx="22" cy="22" r="4" fill="#1c1c1e"/>
           </svg>
           <div>
-            <h1 className="text-2xl font-bold text-[#0A84FF]">HA Device Manager</h1>
+            <h1 className="text-2xl font-bold text-[#00A5CB]">HA Device Manager</h1>
             <p className="text-sm text-[#4a4a4a]">Home Assistant Geräteverwaltung</p>
           </div>
         </div>
@@ -40,7 +40,7 @@ export default function ConfigPanel() {
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               placeholder="https://your-ha-instance.com"
-              className="w-full px-4 py-2 bg-[#1c1c1e] border border-[#2c2c2e] rounded-lg text-[#ffffff] placeholder-[#4a4a4a] focus:outline-none focus:border-[#0A84FF]"
+              className="w-full px-4 py-2 bg-[#1c1c1e] border border-[#2c2c2e] rounded-lg text-[#ffffff] placeholder-[#4a4a4a] focus:outline-none focus:border-[#00A5CB]"
             />
           </div>
 
@@ -53,7 +53,7 @@ export default function ConfigPanel() {
               value={token}
               onChange={(e) => setToken(e.target.value)}
               placeholder="Dein Access Token"
-              className="w-full px-4 py-2 bg-[#1c1c1e] border border-[#2c2c2e] rounded-lg text-[#ffffff] placeholder-[#4a4a4a] focus:outline-none focus:border-[#0A84FF]"
+              className="w-full px-4 py-2 bg-[#1c1c1e] border border-[#2c2c2e] rounded-lg text-[#ffffff] placeholder-[#4a4a4a] focus:outline-none focus:border-[#00A5CB]"
             />
           </div>
 
@@ -66,7 +66,7 @@ export default function ConfigPanel() {
           <button
             type="submit"
             disabled={isLoading || !url || !token}
-            className="w-full py-2 px-4 bg-[#0A84FF] hover:bg-[#3a9bff] text-[#ffffff] font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="w-full py-2 px-4 bg-[#00A5CB] hover:bg-[#3a9bff] text-[#ffffff] font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {isLoading ? 'Verbinde...' : 'Verbinden'}
           </button>

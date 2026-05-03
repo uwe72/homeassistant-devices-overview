@@ -54,14 +54,14 @@ export default function FilterBar({ filters, availableFilters, onFilterChange, d
       <div className="flex flex-wrap gap-x-8 gap-y-4">
         {filterGroups.map(({ category, config, values }) => (
           <div key={category} className="flex items-center gap-3">
-            <span className="text-xs font-semibold text-[#0A84FF] uppercase tracking-wider min-w-[80px]">
+            <span className="text-xs font-semibold text-[#00A5CB] uppercase tracking-wider min-w-[80px]">
               {config.label}
             </span>
             {DROPDOWN_CATEGORIES.has(category) ? (
               <select
                 value={filters[category]}
                 onChange={(e) => onFilterChange(category, e.target.value)}
-                className="px-3 py-1.5 text-xs rounded-lg border border-[#2c2c2e] bg-[#1c1c1e] text-[#9a9a9a] focus:outline-none focus:border-[#0A84FF] cursor-pointer"
+                className="px-3 py-1.5 text-xs rounded-lg border border-[#2c2c2e] bg-[#1c1c1e] text-[#9a9a9a] focus:outline-none focus:border-[#00A5CB] cursor-pointer"
               >
                 <option value="all">Alle</option>
                 {values.map(value => (
@@ -76,8 +76,8 @@ export default function FilterBar({ filters, availableFilters, onFilterChange, d
                   onClick={() => onFilterChange(category, 'all')}
                   className={`px-3 py-1.5 text-xs rounded-full border transition-all ${
                     filters[category] === 'all'
-                      ? 'bg-[#0A84FF20] text-[#0A84FF] border-[#0A84FF] font-medium'
-                      : 'bg-[#1c1c1e] text-[#4a4a4a] border-[#2c2c2e] hover:border-[#0A84FF] hover:text-[#9a9a9a]'
+                      ? 'bg-[#00A5CB20] text-[#00A5CB] border-[#00A5CB] font-medium'
+                      : 'bg-[#1c1c1e] text-[#4a4a4a] border-[#2c2c2e] hover:border-[#00A5CB] hover:text-[#9a9a9a]'
                   }`}
                 >
                   Alle
@@ -95,8 +95,8 @@ export default function FilterBar({ filters, availableFilters, onFilterChange, d
                         isActive
                           ? colorClasses
                             ? `${colorClasses} font-medium`
-                            : 'bg-[#0A84FF20] text-[#0A84FF] border-[#0A84FF] font-medium'
-                          : 'bg-[#1c1c1e] text-[#4a4a4a] border-[#2c2c2e] hover:border-[#0A84FF] hover:text-[#9a9a9a]'
+                            : 'bg-[#00A5CB20] text-[#00A5CB] border-[#00A5CB] font-medium'
+                          : 'bg-[#1c1c1e] text-[#4a4a4a] border-[#2c2c2e] hover:border-[#00A5CB] hover:text-[#9a9a9a]'
                       }`}
                     >
                       {displayLabel}

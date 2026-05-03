@@ -14,7 +14,7 @@ function StatusDot({ online }: { online: boolean }) {
 }
 
 const INTEGRATION_COLORS: Record<string, { bg: string; text: string }> = {
-  'Philips Hue': { bg: 'bg-[#0A84FF20]', text: 'text-[#0A84FF]' },
+  'Philips Hue': { bg: 'bg-[#00A5CB20]', text: 'text-[#00A5CB]' },
   'ZHA': { bg: 'bg-[#BF5AF220]', text: 'text-[#BF5AF2]' },
   'Zigbee2MQTT': { bg: 'bg-[#30D15820]', text: 'text-[#30D158]' },
   'Shelly': { bg: 'bg-[#FF9F0A20]', text: 'text-[#FF9F0A]' },
@@ -24,7 +24,7 @@ const INTEGRATION_COLORS: Record<string, { bg: string; text: string }> = {
 }
 
 function getIntegrationColor(integration: string): { bg: string; text: string } {
-  return INTEGRATION_COLORS[integration] || { bg: 'bg-[#0A84FF20]', text: 'text-[#0A84FF]' }
+  return INTEGRATION_COLORS[integration] || { bg: 'bg-[#00A5CB20]', text: 'text-[#00A5CB]' }
 }
 
 const TYPE_COLORS: Record<string, { bg: string; text: string }> = {
@@ -172,7 +172,7 @@ export default function DeviceTable() {
   }
 
   const SortArrow = ({ field }: { field: string }) => (
-    <span className={`ml-1 text-[10px] ${deviceSort.field === field ? 'opacity-100 text-[#0A84FF]' : 'opacity-30'}`}>
+    <span className={`ml-1 text-[10px] ${deviceSort.field === field ? 'opacity-100 text-[#00A5CB]' : 'opacity-30'}`}>
       {deviceSort.field === field ? (deviceSort.direction === 'asc' ? '▲' : '▼') : '▲'}
     </span>
   )
@@ -184,7 +184,7 @@ export default function DeviceTable() {
         <select
           value={deviceFilters.integration}
           onChange={(e) => setDeviceFilter('integration', e.target.value)}
-          className="px-3 py-2 text-xs bg-[#1c1c1e] border border-[#2c2c2e] rounded-lg text-[#ffffff] focus:outline-none focus:border-[#0A84FF] min-w-[140px]"
+          className="px-3 py-2 text-xs bg-[#1c1c1e] border border-[#2c2c2e] rounded-lg text-[#ffffff] focus:outline-none focus:border-[#00A5CB] min-w-[140px]"
         >
           <option value="all">Alle Integrationen</option>
           {availableFilters.integration.map(integration => (
@@ -192,7 +192,7 @@ export default function DeviceTable() {
           ))}
         </select>
         <div className="flex gap-4 text-sm">
-          <span className="text-[#9a9a9a]">Gesamt: <span className="text-[#0A84FF] font-semibold">{stats.total}</span></span>
+          <span className="text-[#9a9a9a]">Gesamt: <span className="text-[#00A5CB] font-semibold">{stats.total}</span></span>
           <span className="text-[#9a9a9a]">Online: <span className="text-[#30D158] font-semibold">{stats.online}</span></span>
           <span className="text-[#9a9a9a]">Offline: <span className="text-[#FF453A] font-semibold">{stats.offline}</span></span>
         </div>
@@ -201,7 +201,7 @@ export default function DeviceTable() {
           value={deviceSearch}
           onChange={(e) => setDeviceSearch(e.target.value)}
           placeholder="Suchen (mehrere Begriffe mit Leerzeichen = UND)"
-          className="flex-1 px-4 py-2 bg-[#1c1c1e] border border-[#2c2c2e] rounded-lg text-[#ffffff] placeholder-[#4a4a4a] focus:outline-none focus:border-[#0A84FF]"
+          className="flex-1 px-4 py-2 bg-[#1c1c1e] border border-[#2c2c2e] rounded-lg text-[#ffffff] placeholder-[#4a4a4a] focus:outline-none focus:border-[#00A5CB]"
         />
       </div>
 
@@ -232,7 +232,7 @@ export default function DeviceTable() {
                   <th
                     key={col.key}
                     onClick={() => setDeviceSort(col.key)}
-                    className="sticky top-0 bg-[#1c1c1e] z-10 px-4 py-3 text-left text-xs font-medium text-[#9a9a9a] uppercase tracking-wider cursor-pointer hover:text-[#0A84FF] whitespace-nowrap"
+                    className="sticky top-0 bg-[#1c1c1e] z-10 px-4 py-3 text-left text-xs font-medium text-[#9a9a9a] uppercase tracking-wider cursor-pointer hover:text-[#00A5CB] whitespace-nowrap"
                   >
                     {col.label}<SortArrow field={col.key} />
                   </th>
@@ -265,7 +265,7 @@ export default function DeviceTable() {
                             if (e.key === 'Enter') saveEdit()
                             if (e.key === 'Escape') cancelEdit()
                           }}
-                          className="px-2 py-1 bg-[#1c1c1e] border border-[#0A84FF] rounded text-[#ffffff] text-xs w-48"
+                          className="px-2 py-1 bg-[#1c1c1e] border border-[#00A5CB] rounded text-[#ffffff] text-xs w-48"
                           autoFocus
                         />
                         <button onClick={saveEdit} className="text-[#30D158] hover:text-[#40e169]">✓</button>
@@ -273,7 +273,7 @@ export default function DeviceTable() {
                       </div>
                     ) : (
                       <div
-                        className="cursor-pointer hover:text-[#0A84FF] flex items-center gap-2 group"
+                        className="cursor-pointer hover:text-[#00A5CB] flex items-center gap-2 group"
                         onClick={() => startEdit(entity)}
                       >
                         <span className="text-[#ffffff]">{entity.friendly_name}</span>
@@ -293,7 +293,7 @@ export default function DeviceTable() {
                   <td className="px-4 py-2">
                     <span
                       onClick={() => copyToClipboard(entity.entity_id)}
-                      className="font-mono text-xs text-[#9a9a9a] hover:text-[#0A84FF] cursor-pointer px-2 py-1 bg-[#ffffff05] rounded"
+                      className="font-mono text-xs text-[#9a9a9a] hover:text-[#00A5CB] cursor-pointer px-2 py-1 bg-[#ffffff05] rounded"
                     >
                       {entity.entity_id}
                     </span>
@@ -301,7 +301,7 @@ export default function DeviceTable() {
                   <td className="px-4 py-2">
                     <button
                       onClick={() => navigate(`/entities?entity=${encodeURIComponent(entity.entity_id)}`)}
-                      className="px-2 py-1 text-xs bg-[#0A84FF20] text-[#0A84FF] hover:bg-[#0A84FF40] border border-[#0A84FF] rounded transition-colors"
+                      className="px-2 py-1 text-xs bg-[#00A5CB20] text-[#00A5CB] hover:bg-[#00A5CB40] border border-[#00A5CB] rounded transition-colors"
                     >
                       Entität anzeigen
                     </button>

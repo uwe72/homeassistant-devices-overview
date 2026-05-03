@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } from 'recharts'
 import { useHA } from '../context/HAContext'
 
-const COLORS = ['#0A84FF', '#30D158', '#FFD60A', '#FF453A', '#BF5AF2', '#FF9F0A', '#64D2FF', '#FFD60A']
+const COLORS = ['#00A5CB', '#30D158', '#FFD60A', '#FF453A', '#BF5AF2', '#FF9F0A', '#64D2FF', '#FFD60A']
 
 export default function Statistics() {
   const { entities } = useHA()
