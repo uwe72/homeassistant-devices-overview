@@ -15,7 +15,7 @@ export default function Layout() {
   return (
     <div className="h-screen flex flex-col bg-[#1c1c1e]">
       <header className="flex-shrink-0 bg-[#1c1c1e] border-b border-[#2c2c2e] shadow-lg">
-        <div className="max-w-7xl mx-auto px-4 py-2">
+        <div className="px-4 py-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-8">
               <RouterLink to="/" className="flex items-center gap-3">
@@ -58,7 +58,7 @@ export default function Layout() {
               {isConnected && (
                 <>
                   <span className="text-sm text-[#9a9a9a]">
-                    Verbunden mit {credentials?.url}
+                    {credentials?.url}
                   </span>
                   <button
                     onClick={disconnect}
