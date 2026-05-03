@@ -72,5 +72,7 @@ services:
 ```
 ```bash
 pull ghcr.io/uwe72/homeassistant-devices-overview:latest
+```
+```bash
 docker compose up -d ha-devices-overview
 ```
