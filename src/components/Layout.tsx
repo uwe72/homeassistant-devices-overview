@@ -28,6 +28,11 @@ export default function Layout() {
               <span className="text-xl font-bold text-[#0A84FF]">
                 HA Device Manager
               </span>
+              {import.meta.env.VITE_APP_VERSION && (
+                <span className="text-xs bg-[#2c2c2e] text-[#9a9a9a] px-2 py-0.5 rounded ml-2">
+                  {import.meta.env.VITE_APP_VERSION}
+                </span>
+              )}
             </RouterLink>
 
             {isConnected && (

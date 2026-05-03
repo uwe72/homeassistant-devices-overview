@@ -1,12 +1,15 @@
 # Stage 1: Build
 FROM node:20-alpine AS builder
 
+ARG APP_VERSION=dev
+
 WORKDIR /app
 
 COPY package*.json ./
 RUN npm ci
 
 COPY . .
+ENV VITE_APP_VERSION=$APP_VERSION
 RUN npm run build
 
 # Stage 2: Production
