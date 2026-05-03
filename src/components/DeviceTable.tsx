@@ -180,7 +180,7 @@ export default function DeviceTable() {
   return (
     <div className="flex flex-col h-full space-y-4">
       <div className="flex-shrink-0 flex items-center gap-4">
-        <h1 className="text-xl font-semibold text-[#ffffff]">Geräteübersicht</h1>
+        <h1 className="text-xl font-semibold text-[#ffffff]">Geräte</h1>
         <select
           value={deviceFilters.integration}
           onChange={(e) => setDeviceFilter('integration', e.target.value)}

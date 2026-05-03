@@ -248,7 +248,7 @@ export default function IntegrationsTable() {
         </div>
       )}
       <div className="flex-shrink-0 flex items-center gap-4">
-        <h1 className="text-xl font-semibold text-[#ffffff]">Integrationen</h1>
+        <h1 className="text-xl font-semibold text-[#ffffff]">Geräte</h1>
         <select
           value={integrationFilters.integration}
           onChange={(e) => setIntegrationFilter('integration', e.target.value)}
