@@ -15,6 +15,8 @@ const TABS: { id: TabId; label: string }[] = [
 export default function Entities() {
   const [searchParams] = useSearchParams()
   const [activeTab, setActiveTab] = useState<TabId>(() => {
+    const tabParam = searchParams.get('tab')
+    if (tabParam === 'batterie') return 'batterie'
     if (searchParams.has('entity')) return 'geraete'
     return (localStorage.getItem(STORAGE_KEY) as TabId) || 'geraete'
   })

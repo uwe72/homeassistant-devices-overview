@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useHA } from '../context/HAContext'
 import FilterBar from './FilterBar'
 import type { EntityData } from '../types'
@@ -40,6 +41,7 @@ function getConfigStatus(entity: EntityData, currentFloorId: string | null, batt
 }
 
 export default function BatteryTable() {
+  const [searchParams] = useSearchParams()
   const { 
     integrationEntities, areas, floors, updateEntityLabels, updateEntityName, updateEntityArea,
     batteryFilters, batterySearch, batterySort, setBatteryFilter, setBatterySearch, setBatterySort
@@ -96,6 +98,21 @@ export default function BatteryTable() {
       setBatteryFilter('integration', integrationList[0])
     }
   }, [integrationList, batteryFilters.integration, setBatteryFilter])
+
+  useEffect(() => {
+    const entityParam = searchParams.get('entity')
+    if (entityParam && integrationEntities.length > 0) {
+      const entity = integrationEntities.find(e => e.entity_id === entityParam)
+      if (entity) {
+        setBatterySearch(entityParam)
+        if (entity.integration && integrationList.includes(entity.integration)) {
+          setBatteryFilter('integration', entity.integration)
+        }
+      } else {
+        setBatterySearch(entityParam)
+      }
+    }
+  }, [searchParams, integrationEntities, integrationList, setBatteryFilter, setBatterySearch])
 
   const totalInIntegration = useMemo(() => {
     if (batteryFilters.integration === 'all') {

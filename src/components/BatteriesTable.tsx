@@ -13,6 +13,27 @@ function StatusDot({ online }: { online: boolean }) {
   )
 }
 
+function BatteryLevelBar({ level }: { level: number | null }) {
+  if (level === null) {
+    return <span className="text-[#4a4a4a] text-xs">—</span>
+  }
+
+  const color = level >= 50 ? '#30D158' : level >= 10 ? '#FFD60A' : '#FF453A'
+  const bgColor = level >= 50 ? 'bg-[#30D15820]' : level >= 10 ? 'bg-[#FFD60A20]' : 'bg-[#FF453A20]'
+
+  return (
+    <div className="flex items-center gap-2">
+      <div className={`w-16 h-2 rounded-full ${bgColor} overflow-hidden`}>
+        <div
+          className="h-full rounded-full transition-all duration-300"
+          style={{ width: `${level}%`, backgroundColor: color }}
+        />
+      </div>
+      <span className="text-xs font-medium" style={{ color }}>{level}%</span>
+    </div>
+  )
+}
+
 const INTEGRATION_COLORS: Record<string, { bg: string; text: string }> = {
   'Philips Hue': { bg: 'bg-[#0A84FF20]', text: 'text-[#0A84FF]' },
   'ZHA': { bg: 'bg-[#BF5AF220]', text: 'text-[#BF5AF2]' },
@@ -27,67 +48,32 @@ function getIntegrationColor(integration: string): { bg: string; text: string } 
   return INTEGRATION_COLORS[integration] || { bg: 'bg-[#0A84FF20]', text: 'text-[#0A84FF]' }
 }
 
-const TYPE_COLORS: Record<string, { bg: string; text: string }> = {
-  'typ_licht': { bg: 'bg-[#0D3D47]', text: 'text-[#22D3EE]' },
-  'typ_sensor': { bg: 'bg-[#2D1347]', text: 'text-[#BF5AF2]' },
-  'typ_schalter': { bg: 'bg-[#1A3A5C]', text: 'text-[#60A5FA]' },
-  'typ_lichtschalter': { bg: 'bg-[#3D1A2A]', text: 'text-[#FB7185]' },
-  'typ_rollladenschalter': { bg: 'bg-[#3D1A4D]', text: 'text-[#E879F9]' },
-  'typ_bewegungsmelder': { bg: 'bg-[#3D1A3D]', text: 'text-[#F472B6]' },
-  'typ_steckdose': { bg: 'bg-[#0D3D3A]', text: 'text-[#14B8A6]' },
-  'typ_dimmer': { bg: 'bg-[#2E2866]', text: 'text-[#818CF8]' },
-  'typ_thermostat': { bg: 'bg-[#2D1A5C]', text: 'text-[#A78BFA]' },
-  'typ_klimaanlage': { bg: 'bg-[#0C3A55]', text: 'text-[#38BDF8]' },
-  'typ_jalousie': { bg: 'bg-[#2D2A5C]', text: 'text-[#C4B5FD]' },
-  'typ_fenster': { bg: 'bg-[#3D0A4D]', text: 'text-[#D946EF]' },
-  'typ_tuer': { bg: 'bg-[#1A3A5C]', text: 'text-[#93C5FD]' },
-  'typ_taste': { bg: 'bg-[#3D1A6C]', text: 'text-[#C084FC]' },
-  'typ_ventilator': { bg: 'bg-[#0D4A47]', text: 'text-[#5EEAD4]' },
-  'typ_ignore': { bg: 'bg-[#2a2a2a]', text: 'text-[#4a4a4a]' },
-}
-
-const TYPE_FALLBACK_COLOR = { bg: 'bg-[#1e3a5f]', text: 'text-[#60a5fa]' }
-
-function getTypeColor(typLabelRaw: string | null): { bg: string; text: string } | null {
-  if (!typLabelRaw) return null
-  return TYPE_COLORS[typLabelRaw] || TYPE_FALLBACK_COLOR
-}
-
-function formatTyp(typ: string | null): string {
-  if (!typ) return '—'
-  if (typ.startsWith('typ_')) {
-    const raw = typ.replace('typ_', '')
-    return raw.charAt(0).toUpperCase() + raw.slice(1)
-  }
-  return typ
-}
-
-export default function DeviceTable() {
+export default function BatteriesTable() {
   const navigate = useNavigate()
-  const { entities, areas, floors, updateEntityName, deviceFilters, deviceSearch, deviceSort, setDeviceFilter, setDeviceSearch, setDeviceSort } = useHA()
+  const { allEntities, areas, floors, updateEntityName, batteriesFilters, batteriesSearch, batteriesSort, setBatteriesFilter, setBatteriesSearch, setBatteriesSort } = useHA()
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editValue, setEditValue] = useState('')
 
+  const batteryEntities = useMemo(() => {
+    return allEntities.filter(e => e.labels.includes('batterie_ja'))
+  }, [allEntities])
+
   const availableFilters = useMemo(() => {
-    const types = new Set<string>()
     const integrations = new Set<string>()
     const floorNames = new Set<string>()
     const areaNames = new Set<string>()
-    let hasIgnore = false
 
-    entities.forEach(e => {
-      if (e.typ) types.add(e.typ)
-      if (e.typLabelRaw === 'typ_ignore') hasIgnore = true
+    batteryEntities.forEach(e => {
       if (e.integration) integrations.add(e.integration)
       if (e.floor !== '—') floorNames.add(e.floor)
       if (e.area !== '—') areaNames.add(e.area)
     })
 
     let filteredAreas: string[]
-    if (deviceFilters.floor === 'all') {
+    if (batteriesFilters.floor === 'all') {
       filteredAreas = Array.from(areaNames).sort()
     } else {
-      const selectedFloor = floors.find(f => f.name === deviceFilters.floor)
+      const selectedFloor = floors.find(f => f.name === batteriesFilters.floor)
       if (selectedFloor) {
         const areaIdsForFloor = new Set(
           areas.filter(a => a.floor_id === selectedFloor.floor_id).map(a => a.name)
@@ -100,16 +86,15 @@ export default function DeviceTable() {
 
     return {
       status: ['online', 'offline'],
-      typ: ['none', ...Array.from(types).sort(), ...(hasIgnore ? ['Ignorieren'] : [])],
       integration: Array.from(integrations).sort(),
       floor: Array.from(floorNames).sort(),
       area: filteredAreas
     }
-  }, [entities, areas, floors, deviceFilters.floor])
+  }, [batteryEntities, areas, floors, batteriesFilters.floor])
 
   const filteredEntities = useMemo(() => {
-    return entities.filter(e => {
-      const searchTerms = deviceSearch.trim().toLowerCase().split(/\s+/).filter(Boolean)
+    return batteryEntities.filter(e => {
+      const searchTerms = batteriesSearch.trim().toLowerCase().split(/\s+/).filter(Boolean)
       const matchSearch = searchTerms.length === 0 ||
         searchTerms.every(term =>
           e.friendly_name.toLowerCase().includes(term) ||
@@ -117,31 +102,28 @@ export default function DeviceTable() {
           e.area.toLowerCase().includes(term)
         )
 
-      const matchStatus = deviceFilters.status === 'all' ||
-        (deviceFilters.status === 'online' ? e.online : !e.online)
+      const matchStatus = batteriesFilters.status === 'all' ||
+        (batteriesFilters.status === 'online' ? e.online : !e.online)
 
-      let matchTyp = true
-      if (deviceFilters.typ === 'none') {
-        matchTyp = e.typ === null && e.typLabelRaw !== 'typ_ignore'
-      } else if (deviceFilters.typ === 'Ignorieren') {
-        matchTyp = e.typLabelRaw === 'typ_ignore'
-      } else if (deviceFilters.typ !== 'all') {
-        matchTyp = e.typ === deviceFilters.typ
-      }
-      const matchIntegration = deviceFilters.integration === 'all' || e.integration === deviceFilters.integration
-      const matchFloor = deviceFilters.floor === 'all' || e.floor === deviceFilters.floor
-      const matchArea = deviceFilters.area === 'all' || e.area === deviceFilters.area
-      return matchSearch && matchStatus && matchTyp && matchIntegration && matchFloor && matchArea
+      const matchIntegration = batteriesFilters.integration === 'all' || e.integration === batteriesFilters.integration
+      const matchFloor = batteriesFilters.floor === 'all' || e.floor === batteriesFilters.floor
+      const matchArea = batteriesFilters.area === 'all' || e.area === batteriesFilters.area
+      return matchSearch && matchStatus && matchIntegration && matchFloor && matchArea
     }).sort((a, b) => {
-      const va = String(a[deviceSort.field as keyof EntityData] || '')
-      const vb = String(b[deviceSort.field as keyof EntityData] || '')
-      const primarySort = deviceSort.direction === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va)
+      if (batteriesSort.field === 'batteryLevel') {
+        const aVal = a.batteryLevel ?? 999
+        const bVal = b.batteryLevel ?? 999
+        return batteriesSort.direction === 'asc' ? aVal - bVal : bVal - aVal
+      }
+      const va = String(a[batteriesSort.field as keyof EntityData] || '')
+      const vb = String(b[batteriesSort.field as keyof EntityData] || '')
+      const primarySort = batteriesSort.direction === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va)
       if (primarySort !== 0) return primarySort
       const nameA = String(a.friendly_name || '')
       const nameB = String(b.friendly_name || '')
       return nameA.localeCompare(nameB)
     })
-  }, [entities, deviceSearch, deviceFilters, deviceSort])
+  }, [batteryEntities, batteriesSearch, batteriesFilters, batteriesSort])
 
   const startEdit = (entity: EntityData) => {
     setEditingId(entity.entity_id)
@@ -172,18 +154,18 @@ export default function DeviceTable() {
   }
 
   const SortArrow = ({ field }: { field: string }) => (
-    <span className={`ml-1 text-[10px] ${deviceSort.field === field ? 'opacity-100 text-[#0A84FF]' : 'opacity-30'}`}>
-      {deviceSort.field === field ? (deviceSort.direction === 'asc' ? '▲' : '▼') : '▲'}
+    <span className={`ml-1 text-[10px] ${batteriesSort.field === field ? 'opacity-100 text-[#0A84FF]' : 'opacity-30'}`}>
+      {batteriesSort.field === field ? (batteriesSort.direction === 'asc' ? '▲' : '▼') : '▲'}
     </span>
   )
 
   return (
     <div className="flex flex-col h-full space-y-4">
       <div className="flex-shrink-0 flex items-center gap-4">
-        <h1 className="text-xl font-semibold text-[#ffffff]">Geräteübersicht</h1>
+        <h1 className="text-xl font-semibold text-[#ffffff]">Batterien</h1>
         <select
-          value={deviceFilters.integration}
-          onChange={(e) => setDeviceFilter('integration', e.target.value)}
+          value={batteriesFilters.integration}
+          onChange={(e) => setBatteriesFilter('integration', e.target.value)}
           className="px-3 py-2 text-xs bg-[#1c1c1e] border border-[#2c2c2e] rounded-lg text-[#ffffff] focus:outline-none focus:border-[#0A84FF] min-w-[140px]"
         >
           <option value="all">Alle Integrationen</option>
@@ -198,8 +180,8 @@ export default function DeviceTable() {
         </div>
         <input
           type="text"
-          value={deviceSearch}
-          onChange={(e) => setDeviceSearch(e.target.value)}
+          value={batteriesSearch}
+          onChange={(e) => setBatteriesSearch(e.target.value)}
           placeholder="Suchen (mehrere Begriffe mit Leerzeichen = UND)"
           className="flex-1 px-4 py-2 bg-[#1c1c1e] border border-[#2c2c2e] rounded-lg text-[#ffffff] placeholder-[#4a4a4a] focus:outline-none focus:border-[#0A84FF]"
         />
@@ -207,9 +189,9 @@ export default function DeviceTable() {
 
       <div className="flex-shrink-0">
         <FilterBar
-          filters={deviceFilters}
+          filters={batteriesFilters}
           availableFilters={availableFilters}
-          onFilterChange={setDeviceFilter}
+          onFilterChange={setBatteriesFilter}
           excludeFilters={['integration']}
         />
       </div>
@@ -225,13 +207,13 @@ export default function DeviceTable() {
                   { key: 'floor', label: 'Bereich' },
                   { key: 'area', label: 'Raum' },
                   { key: 'friendly_name', label: 'Device' },
-                  { key: 'typ', label: 'Typ' },
+                  { key: 'batteryLevel', label: 'Batterielevel' },
                   { key: 'entity_id', label: 'Entity ID' },
                   { key: 'actions', label: 'Aktionen' },
                 ].map(col => (
                   <th
                     key={col.key}
-                    onClick={() => setDeviceSort(col.key)}
+                    onClick={() => setBatteriesSort(col.key)}
                     className="sticky top-0 bg-[#1c1c1e] z-10 px-4 py-3 text-left text-xs font-medium text-[#9a9a9a] uppercase tracking-wider cursor-pointer hover:text-[#0A84FF] whitespace-nowrap"
                   >
                     {col.label}<SortArrow field={col.key} />
@@ -240,9 +222,7 @@ export default function DeviceTable() {
               </tr>
             </thead>
             <tbody>
-              {filteredEntities.map(entity => {
-                const typeColor = getTypeColor(entity.typLabelRaw)
-                return (
+              {filteredEntities.map(entity => (
                 <tr key={entity.entity_id} className="border-b border-[#2c2c2e] hover:bg-[#2c2c2e] transition-colors">
                   <td className="px-4 py-2">
                     <span className={`px-2 py-1 ${getIntegrationColor(entity.integration).bg} ${getIntegrationColor(entity.integration).text} rounded-full text-xs`}>
@@ -282,13 +262,7 @@ export default function DeviceTable() {
                     )}
                   </td>
                   <td className="px-4 py-2">
-                    {entity.typ ? (
-                      <span className={`px-2 py-1 ${typeColor?.bg || ''} text-[#ffffff] rounded-full text-xs font-medium`}>
-                        {formatTyp(entity.typ)}
-                      </span>
-                    ) : (
-                      <span className="text-xs text-[#4a4a4a]">—</span>
-                    )}
+                    <BatteryLevelBar level={entity.batteryLevel} />
                   </td>
                   <td className="px-4 py-2">
                     <span
@@ -300,18 +274,18 @@ export default function DeviceTable() {
                   </td>
                   <td className="px-4 py-2">
                     <button
-                      onClick={() => navigate(`/entities?entity=${encodeURIComponent(entity.entity_id)}`)}
+                      onClick={() => navigate(`/entities?tab=batterie&entity=${encodeURIComponent(entity.entity_id)}`)}
                       className="px-2 py-1 text-xs bg-[#0A84FF20] text-[#0A84FF] hover:bg-[#0A84FF40] border border-[#0A84FF] rounded transition-colors"
                     >
                       Entität anzeigen
                     </button>
                   </td>
                 </tr>
-              )})}
+              ))}
               {filteredEntities.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="px-4 py-8 text-center text-[#4a4a4a]">
-                    Keine Geräte gefunden
+                  <td colSpan={7} className="px-4 py-8 text-center text-[#4a4a4a]">
+                    Keine Entitäten mit Label "batterie_ja" gefunden
                   </td>
                 </tr>
               )}

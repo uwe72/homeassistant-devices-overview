@@ -1,5 +1,5 @@
-import BatteryTable from '../components/BatteryTable'
+import BatteriesTable from '../components/BatteriesTable'
 
 export default function Batteries() {
-  return <BatteryTable />
+  return <BatteriesTable />
 }

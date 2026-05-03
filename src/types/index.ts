@@ -57,6 +57,7 @@ export interface EntityData {
   labels: string[]
   typ: string | null
   typLabelRaw: string | null
+  batteryLevel: number | null
 }
 
 export interface HACredentials {
@@ -105,6 +106,14 @@ export type BatteryFilterState = {
   floor: string
   area: string
   batterie: string
+  [key: string]: string
+}
+
+export type BatteriesFilterState = {
+  status: string
+  integration: string
+  floor: string
+  area: string
   [key: string]: string
 }
 

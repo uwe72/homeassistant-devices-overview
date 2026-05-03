@@ -3,6 +3,7 @@ import { HAProvider, useHA } from './context/HAContext'
 import Layout from './components/Layout'
 import ConfigPanel from './components/ConfigPanel'
 import Devices from './pages/Devices'
+import Batteries from './pages/Batteries'
 import IntegrationsDevices from './pages/IntegrationsDevices'
 import Statistics from './pages/Statistics'
 import Entities from './pages/Entities'
@@ -29,8 +30,8 @@ function AppRoutes() {
     <Routes>
       <Route path="/" element={<Layout />}>
         <Route index element={<Devices />} />
+        <Route path="batteries" element={<Batteries />} />
         <Route path="entities" element={<Entities />} />
-        <Route path="batteries" element={<Navigate to="/entities" replace />} />
         <Route path="integrations" element={<IntegrationsDevices />} />
         <Route path="statistics" element={<Statistics />} />
         <Route path="*" element={<Navigate to="/" replace />} />

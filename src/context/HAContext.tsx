@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react'
 import { haClient } from '../api/haClient'
-import type { HACredentials, EntityData, HAArea, HAFloor, HALabel, HAEntity, HADevice, HAState, FilterState, IntegrationFilterState, BatteryFilterState, SortDirection } from '../types'
+import type { HACredentials, EntityData, HAArea, HAFloor, HALabel, HAEntity, HADevice, HAState, FilterState, IntegrationFilterState, BatteryFilterState, BatteriesFilterState, SortDirection } from '../types'
 
 interface HAContextType {
   isConnected: boolean
@@ -8,6 +8,7 @@ interface HAContextType {
   error: string | null
   credentials: HACredentials | null
   entities: EntityData[]
+  allEntities: EntityData[]
   integrationEntities: EntityData[]
   areas: HAArea[]
   floors: HAFloor[]
@@ -37,6 +38,12 @@ interface HAContextType {
   setBatteryFilter: (key: string, value: string) => void
   setBatterySearch: (value: string) => void
   setBatterySort: (field: string) => void
+  batteriesFilters: BatteriesFilterState
+  batteriesSearch: string
+  batteriesSort: { field: string; direction: SortDirection }
+  setBatteriesFilter: (key: string, value: string) => void
+  setBatteriesSearch: (value: string) => void
+  setBatteriesSort: (field: string) => void
 }
 
 const HAContext = createContext<HAContextType | null>(null)
@@ -65,6 +72,7 @@ export function HAProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<string | null>(null)
   const [credentials, setCredentials] = useState<HACredentials | null>(null)
   const [entities, setEntities] = useState<EntityData[]>([])
+  const [allEntities, setAllEntities] = useState<EntityData[]>([])
   const [integrationEntities, setIntegrationEntities] = useState<EntityData[]>([])
   const [areas, setAreas] = useState<HAArea[]>([])
   const [floors, setFloors] = useState<HAFloor[]>([])
@@ -114,6 +122,18 @@ export function HAProvider({ children }: { children: React.ReactNode }) {
     direction: 'asc'
   })
 
+  const [batteriesFilters, setBatteriesFilters] = useState<BatteriesFilterState>({
+    status: 'all',
+    integration: 'all',
+    floor: 'all',
+    area: 'all'
+  })
+  const [batteriesSearch, setBatteriesSearch] = useState('')
+  const [batteriesSortState, setBatteriesSortState] = useState<{ field: string; direction: SortDirection }>({
+    field: 'batteryLevel',
+    direction: 'asc'
+  })
+
   const setDeviceFilter = useCallback((key: string, value: string) => {
     setDeviceFilters(prev => {
       if (key === 'floor') {
@@ -158,6 +178,22 @@ export function HAProvider({ children }: { children: React.ReactNode }) {
     }))
   }, [])
 
+  const setBatteriesFilter = useCallback((key: string, value: string) => {
+    setBatteriesFilters(prev => {
+      if (key === 'floor') {
+        return { ...prev, [key]: value, area: 'all' }
+      }
+      return { ...prev, [key]: value }
+    })
+  }, [])
+
+  const setBatteriesSort = useCallback((field: string) => {
+    setBatteriesSortState(prev => ({
+      field,
+      direction: prev.field === field ? (prev.direction === 'asc' ? 'desc' : 'asc') : 'asc'
+    }))
+  }, [])
+
   const processEntityData = useCallback((
     entityList: HAEntity[],
     deviceMap: Record<string, HADevice>,
@@ -165,9 +201,10 @@ export function HAProvider({ children }: { children: React.ReactNode }) {
     floorMap: Record<string, HAFloor>,
     stateMap: Record<string, HAState>,
     labelRegistry: HALabel[]
-  ): { main: EntityData[], integration: EntityData[] } => {
+  ): { main: EntityData[], integration: EntityData[], all: EntityData[] } => {
     const mainData: EntityData[] = []
     const integrationData: EntityData[] = []
+    const allData: EntityData[] = []
 
     entityList.forEach(e => {
       const state = stateMap[e.entity_id] || {}
@@ -188,6 +225,21 @@ export function HAProvider({ children }: { children: React.ReactNode }) {
       const floorName = floor?.name || '—'
       const areaName = area?.name || '—'
 
+      const stateNum = parseFloat(state.state)
+      let batteryLevel: number | null = null
+
+      const isLowBatSensor = state.attributes?.parameter === 'LOW_BAT'
+
+      if (!isNaN(stateNum) && stateNum >= 0 && stateNum <= 100) {
+        batteryLevel = stateNum
+      } else if (isLowBatSensor) {
+        batteryLevel = state.state === 'on' ? 5 : 100
+      } else if (state.state === 'on' || state.state === 'true') {
+        batteryLevel = 100
+      } else if (typeof state.attributes?.battery_level === 'number') {
+        batteryLevel = state.attributes.battery_level
+      }
+
       const entityObj: EntityData = {
         entity_id: e.entity_id,
         friendly_name: displayName,
@@ -200,8 +252,11 @@ export function HAProvider({ children }: { children: React.ReactNode }) {
         floor_id: area?.floor_id || null,
         labels,
         typ,
-        typLabelRaw: isValidTypLabel ? typLabel : null
+        typLabelRaw: isValidTypLabel ? typLabel : null,
+        batteryLevel
       }
+
+      allData.push(entityObj)
 
       if (hasTypLabel) {
         mainData.push(entityObj)
@@ -212,7 +267,7 @@ export function HAProvider({ children }: { children: React.ReactNode }) {
       }
     })
 
-    return { main: mainData, integration: integrationData }
+    return { main: mainData, integration: integrationData, all: allData }
   }, [])
 
   const refreshData = useCallback(async () => {
@@ -244,10 +299,11 @@ export function HAProvider({ children }: { children: React.ReactNode }) {
       const filteredTypLabels = labelList.filter(l => l.label_id.startsWith('typ_'))
       const filteredBatterieLabels = labelList.filter(l => l.label_id.startsWith('batterie_'))
 
-      const { main, integration } = processEntityData(entityList, deviceMap, areaMap, floorMap, stateMap, filteredTypLabels)
+      const { main, integration, all } = processEntityData(entityList, deviceMap, areaMap, floorMap, stateMap, filteredTypLabels)
 
       setEntities(main)
       setIntegrationEntities(integration)
+      setAllEntities(all)
       setAreas(areaList)
       setFloors(floorList)
       setTypLabels(filteredTypLabels)
@@ -294,6 +350,7 @@ export function HAProvider({ children }: { children: React.ReactNode }) {
     setIsConnected(false)
     setCredentials(null)
     setEntities([])
+    setAllEntities([])
     setIntegrationEntities([])
     setAreas([])
     setFloors([])
@@ -330,6 +387,14 @@ export function HAProvider({ children }: { children: React.ReactNode }) {
     })
     setBatterySearch('')
     setBatterySortState({ field: 'friendly_name', direction: 'asc' })
+    setBatteriesFilters({
+      status: 'all',
+      integration: 'all',
+      floor: 'all',
+      area: 'all'
+    })
+    setBatteriesSearch('')
+    setBatteriesSortState({ field: 'batteryLevel', direction: 'asc' })
   }, [])
 
   const updateEntityLabels = useCallback(async (entityId: string, labels: string[]) => {
@@ -346,6 +411,7 @@ export function HAProvider({ children }: { children: React.ReactNode }) {
       return prev.map(e => e.entity_id === entityId ? { ...e, labels, typ, typLabelRaw } : e)
     })
     setIntegrationEntities(prev => prev.map(e => e.entity_id === entityId ? { ...e, labels, typ, typLabelRaw } : e))
+    setAllEntities(prev => prev.map(e => e.entity_id === entityId ? { ...e, labels, typ, typLabelRaw } : e))
   }, [typLabels])
 
   const updateEntityName = useCallback(async (entityId: string, name: string | null) => {
@@ -358,6 +424,7 @@ export function HAProvider({ children }: { children: React.ReactNode }) {
     
     setEntities(prev => prev.map(updateEntity))
     setIntegrationEntities(prev => prev.map(updateEntity))
+    setAllEntities(prev => prev.map(updateEntity))
   }, [])
 
   const updateEntityArea = useCallback(async (entityId: string, areaId: string | null) => {
@@ -378,6 +445,7 @@ export function HAProvider({ children }: { children: React.ReactNode }) {
     
     setEntities(prev => prev.map(updateEntity))
     setIntegrationEntities(prev => prev.map(updateEntity))
+    setAllEntities(prev => prev.map(updateEntity))
   }, [areas, floors])
 
   useEffect(() => {
@@ -395,6 +463,7 @@ export function HAProvider({ children }: { children: React.ReactNode }) {
       error,
       credentials,
       entities,
+      allEntities,
       integrationEntities,
       areas,
       floors,
@@ -423,7 +492,13 @@ export function HAProvider({ children }: { children: React.ReactNode }) {
       batterySort: batterySortState,
       setBatteryFilter,
       setBatterySearch,
-      setBatterySort
+      setBatterySort,
+      batteriesFilters,
+      batteriesSearch,
+      batteriesSort: batteriesSortState,
+      setBatteriesFilter,
+      setBatteriesSearch,
+      setBatteriesSort
     }}>
       {children}
     </HAContext.Provider>
