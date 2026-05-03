@@ -29,9 +29,14 @@ export default function Layout() {
                 HA Device Manager
               </span>
               {import.meta.env.VITE_APP_VERSION && (
-                <span className="text-xs bg-[#2c2c2e] text-[#9a9a9a] px-2 py-0.5 rounded ml-2">
+                <a
+                  href="https://github.com/uwe72/homeassistant-devices-overview/actions"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs bg-[#2c2c2e] text-[#9a9a9a] px-2 py-0.5 rounded ml-2 hover:text-[#00A5CB] transition-colors"
+                >
                   {import.meta.env.VITE_APP_VERSION}
-                </span>
+                </a>
               )}
             </RouterLink>
 
