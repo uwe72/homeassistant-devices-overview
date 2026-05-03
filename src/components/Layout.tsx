@@ -7,7 +7,7 @@ export default function Layout() {
 
   const navItems = [
     { path: '/', label: 'Geräte' },
-    { path: '/integrations', label: 'Entitäten' },
+    { path: '/entities', label: 'Entitäten' },
     { path: '/statistics', label: 'Statistiken' }
   ]
 

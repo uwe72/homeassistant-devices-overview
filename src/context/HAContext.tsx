@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react'
 import { haClient } from '../api/haClient'
-import type { HACredentials, EntityData, HAArea, HAFloor, HALabel, HAEntity, HADevice, HAState, FilterState, IntegrationFilterState, SortDirection } from '../types'
+import type { HACredentials, EntityData, HAArea, HAFloor, HALabel, HAEntity, HADevice, HAState, FilterState, IntegrationFilterState, BatteryFilterState, SortDirection } from '../types'
 
 interface HAContextType {
   isConnected: boolean
@@ -12,6 +12,7 @@ interface HAContextType {
   areas: HAArea[]
   floors: HAFloor[]
   typLabels: HALabel[]
+  batterieLabels: HALabel[]
   connect: (creds: HACredentials) => Promise<void>
   disconnect: () => void
   refreshData: () => Promise<void>
@@ -30,6 +31,12 @@ interface HAContextType {
   setIntegrationFilter: (key: string, value: string) => void
   setIntegrationSearch: (value: string) => void
   setIntegrationSort: (field: string) => void
+  batteryFilters: BatteryFilterState
+  batterySearch: string
+  batterySort: { field: string; direction: SortDirection }
+  setBatteryFilter: (key: string, value: string) => void
+  setBatterySearch: (value: string) => void
+  setBatterySort: (field: string) => void
 }
 
 const HAContext = createContext<HAContextType | null>(null)
@@ -62,6 +69,7 @@ export function HAProvider({ children }: { children: React.ReactNode }) {
   const [areas, setAreas] = useState<HAArea[]>([])
   const [floors, setFloors] = useState<HAFloor[]>([])
   const [typLabels, setTypLabels] = useState<HALabel[]>([])
+  const [batterieLabels, setBatterieLabels] = useState<HALabel[]>([])
 
   const [deviceFilters, setDeviceFilters] = useState<FilterState>({
     status: 'all',
@@ -79,7 +87,7 @@ export function HAProvider({ children }: { children: React.ReactNode }) {
   const [integrationFilters, setIntegrationFilters] = useState<IntegrationFilterState>({
     status: 'all',
     typ: 'all',
-    integration: 'all',
+    integration: localStorage.getItem('integration_selected') || 'all',
     configStatus: 'all',
     floor: 'all',
     area: 'all',
@@ -87,6 +95,21 @@ export function HAProvider({ children }: { children: React.ReactNode }) {
   })
   const [integrationSearch, setIntegrationSearch] = useState('')
   const [integrationSort, setIntegrationSortState] = useState<{ field: string; direction: SortDirection }>({
+    field: 'friendly_name',
+    direction: 'asc'
+  })
+
+  const [batteryFilters, setBatteryFilters] = useState<BatteryFilterState>({
+    status: 'all',
+    typ: 'all',
+    integration: localStorage.getItem('battery_integration_selected') || 'all',
+    configStatus: 'all',
+    floor: 'all',
+    area: 'all',
+    batterie: 'all'
+  })
+  const [batterySearch, setBatterySearch] = useState('')
+  const [batterySortState, setBatterySortState] = useState<{ field: string; direction: SortDirection }>({
     field: 'friendly_name',
     direction: 'asc'
   })
@@ -108,11 +131,28 @@ export function HAProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const setIntegrationFilter = useCallback((key: string, value: string) => {
+    if (key === 'integration') {
+      localStorage.setItem('integration_selected', value)
+    }
     setIntegrationFilters(prev => ({ ...prev, [key]: value }))
   }, [])
 
   const setIntegrationSort = useCallback((field: string) => {
     setIntegrationSortState(prev => ({
+      field,
+      direction: prev.field === field ? (prev.direction === 'asc' ? 'desc' : 'asc') : 'asc'
+    }))
+  }, [])
+
+  const setBatteryFilter = useCallback((key: string, value: string) => {
+    if (key === 'integration') {
+      localStorage.setItem('battery_integration_selected', value)
+    }
+    setBatteryFilters(prev => ({ ...prev, [key]: value }))
+  }, [])
+
+  const setBatterySort = useCallback((field: string) => {
+    setBatterySortState(prev => ({
       field,
       direction: prev.field === field ? (prev.direction === 'asc' ? 'desc' : 'asc') : 'asc'
     }))
@@ -202,6 +242,7 @@ export function HAProvider({ children }: { children: React.ReactNode }) {
       stateList.forEach(s => { stateMap[s.entity_id] = s })
 
       const filteredTypLabels = labelList.filter(l => l.label_id.startsWith('typ_'))
+      const filteredBatterieLabels = labelList.filter(l => l.label_id.startsWith('batterie_'))
 
       const { main, integration } = processEntityData(entityList, deviceMap, areaMap, floorMap, stateMap, filteredTypLabels)
 
@@ -210,6 +251,7 @@ export function HAProvider({ children }: { children: React.ReactNode }) {
       setAreas(areaList)
       setFloors(floorList)
       setTypLabels(filteredTypLabels)
+      setBatterieLabels(filteredBatterieLabels)
     } catch (err) {
       setError('Fehler beim Laden der Daten')
       console.error(err)
@@ -256,6 +298,7 @@ export function HAProvider({ children }: { children: React.ReactNode }) {
     setAreas([])
     setFloors([])
     setTypLabels([])
+    setBatterieLabels([])
     setDeviceFilters({
       status: 'all',
       typ: 'all',
@@ -276,6 +319,17 @@ export function HAProvider({ children }: { children: React.ReactNode }) {
     })
     setIntegrationSearch('')
     setIntegrationSortState({ field: 'friendly_name', direction: 'asc' })
+    setBatteryFilters({
+      status: 'all',
+      typ: 'all',
+      integration: 'all',
+      configStatus: 'all',
+      floor: 'all',
+      area: 'all',
+      batterie: 'all'
+    })
+    setBatterySearch('')
+    setBatterySortState({ field: 'friendly_name', direction: 'asc' })
   }, [])
 
   const updateEntityLabels = useCallback(async (entityId: string, labels: string[]) => {
@@ -345,6 +399,7 @@ export function HAProvider({ children }: { children: React.ReactNode }) {
       areas,
       floors,
       typLabels,
+      batterieLabels,
       connect,
       disconnect,
       refreshData,
@@ -362,7 +417,13 @@ export function HAProvider({ children }: { children: React.ReactNode }) {
       setDeviceSort,
       setIntegrationFilter,
       setIntegrationSearch,
-      setIntegrationSort
+      setIntegrationSort,
+      batteryFilters,
+      batterySearch,
+      batterySort: batterySortState,
+      setBatteryFilter,
+      setBatterySearch,
+      setBatterySort
     }}>
       {children}
     </HAContext.Provider>

@@ -15,17 +15,17 @@ const FILTER_CONFIG: Record<string, { label: string; icon: string }> = {
   configStatus: { label: 'Konfiguration', icon: '⚙' },
   floor: { label: 'Bereich', icon: '⌂' },
   area: { label: 'Raum', icon: '◻' },
-  ignore: { label: 'Ignorierte', icon: '✕' }
+  batterie: { label: 'Batterie', icon: '⏻' }
 }
 
 const VALUE_LABELS: Record<string, Record<string, string>> = {
   status: { online: 'Online', offline: 'Offline' },
   configStatus: { complete: 'Vollständig', incomplete: 'Unvollständig' },
   typ: { none: 'Kein Typ', 'Ignorieren': 'Ignorieren' },
-  ignore: { hidden: 'Ausblenden' }
+  batterie: { ohne_zuordnung: 'Ohne Zuordnung', batterie_ja: 'Ja', batterie_nein: 'Nein' }
 }
 
-const DROPDOWN_CATEGORIES = new Set(['area', 'floor', 'typ', 'integration', 'status', 'configStatus', 'ignore'])
+const DROPDOWN_CATEGORIES = new Set(['area', 'floor', 'typ', 'integration', 'status', 'configStatus', 'ignore', 'batterie'])
 
 const VALUE_COLORS: Record<string, Record<string, string>> = {
   status: {
@@ -54,7 +54,7 @@ export default function FilterBar({ filters, availableFilters, onFilterChange, d
       <div className="flex flex-wrap gap-x-8 gap-y-4">
         {filterGroups.map(({ category, config, values }) => (
           <div key={category} className="flex items-center gap-3">
-            <span className="text-xs font-semibold text-[#4a4a4a] uppercase tracking-wider min-w-[80px]">
+            <span className="text-xs font-semibold text-[#0A84FF] uppercase tracking-wider min-w-[80px]">
               {config.label}
             </span>
             {DROPDOWN_CATEGORIES.has(category) ? (

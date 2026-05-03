@@ -5,6 +5,7 @@ import ConfigPanel from './components/ConfigPanel'
 import Devices from './pages/Devices'
 import IntegrationsDevices from './pages/IntegrationsDevices'
 import Statistics from './pages/Statistics'
+import Entities from './pages/Entities'
 
 function AppRoutes() {
   const { isConnected, isLoading } = useHA()
@@ -28,6 +29,8 @@ function AppRoutes() {
     <Routes>
       <Route path="/" element={<Layout />}>
         <Route index element={<Devices />} />
+        <Route path="entities" element={<Entities />} />
+        <Route path="batteries" element={<Navigate to="/entities" replace />} />
         <Route path="integrations" element={<IntegrationsDevices />} />
         <Route path="statistics" element={<Statistics />} />
         <Route path="*" element={<Navigate to="/" replace />} />

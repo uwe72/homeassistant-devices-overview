@@ -1,5 +1,4 @@
 import { useState, useMemo, useEffect } from 'react'
-import { useSearchParams } from 'react-router-dom'
 import { useHA } from '../context/HAContext'
 import FilterBar from './FilterBar'
 import type { EntityData } from '../types'
@@ -27,12 +26,12 @@ function getIntegrationColor(integration: string): { bg: string; text: string } 
   return INTEGRATION_COLORS[integration] || { bg: 'bg-[#0A84FF20]', text: 'text-[#0A84FF]' }
 }
 
-
-function getConfigStatus(entity: EntityData, currentFloorId: string | null): { isComplete: boolean; missing: string[] } {
+function getConfigStatus(entity: EntityData, currentFloorId: string | null, batterieLabel: string | null): { isComplete: boolean; missing: string[] } {
   const missing: string[] = []
   if (!entity.typLabelRaw) missing.push('Typ')
   if (!currentFloorId) missing.push('Bereich')
   if (!entity.area_id) missing.push('Raum')
+  if (!batterieLabel) missing.push('Batterie')
   
   return {
     isComplete: missing.length === 0,
@@ -40,36 +39,34 @@ function getConfigStatus(entity: EntityData, currentFloorId: string | null): { i
   }
 }
 
-export default function IntegrationsTable() {
-  const [searchParams] = useSearchParams()
+export default function BatteryTable() {
   const { 
-    integrationEntities, areas, floors, typLabels, updateEntityLabels, updateEntityName, updateEntityArea,
-    integrationFilters, integrationSearch, integrationSort, setIntegrationFilter, setIntegrationSearch, setIntegrationSort
+    integrationEntities, areas, floors, updateEntityLabels, updateEntityName, updateEntityArea,
+    batteryFilters, batterySearch, batterySort, setBatteryFilter, setBatterySearch, setBatterySort
   } = useHA()
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editValue, setEditValue] = useState('')
   const [bulkLabel, setBulkLabel] = useState('')
   const [pendingFloor, setPendingFloor] = useState<Record<string, string>>({})
-  const [entityNotFound, setEntityNotFound] = useState<string | null>(null)
 
   const availableAreas = useMemo(() => {
-    if (integrationFilters.floor === 'all') {
+    if (batteryFilters.floor === 'all') {
       return areas.map(a => a.name)
     }
-    const selectedFloor = floors.find(f => f.name === integrationFilters.floor)
+    const selectedFloor = floors.find(f => f.name === batteryFilters.floor)
     if (!selectedFloor) return []
     return areas
       .filter(a => a.floor_id === selectedFloor.floor_id)
       .map(a => a.name)
-  }, [integrationFilters.floor, floors, areas])
+  }, [batteryFilters.floor, floors, areas])
 
   const availableFilters = useMemo(() => {
     const types = new Set<string>()
     let hasIgnore = false
     
-    const entitiesForIntegration = integrationFilters.integration === 'all' 
+    const entitiesForIntegration = batteryFilters.integration === 'all' 
       ? integrationEntities 
-      : integrationEntities.filter(e => e.integration === integrationFilters.integration)
+      : integrationEntities.filter(e => e.integration === batteryFilters.integration)
     
     entitiesForIntegration.forEach(e => {
       if (e.typ) types.add(e.typ)
@@ -82,9 +79,9 @@ export default function IntegrationsTable() {
       configStatus: ['complete', 'incomplete'],
       floor: floors.map(f => f.name),
       area: availableAreas,
-      ignore: ['hidden']
+      batterie: ['ohne_zuordnung', 'batterie_ja', 'batterie_nein']
     }
-  }, [integrationEntities, integrationFilters.integration, floors, availableAreas])
+  }, [integrationEntities, batteryFilters.integration, floors, availableAreas])
 
   const integrationList = useMemo(() => {
     const integrations = new Set<string>()
@@ -95,35 +92,17 @@ export default function IntegrationsTable() {
   }, [integrationEntities])
 
   useEffect(() => {
-    if (integrationList.length > 0 &&
-        (integrationFilters.integration === 'all' || !integrationList.includes(integrationFilters.integration))) {
-      setIntegrationFilter('integration', integrationList[0])
+    if (integrationList.length > 0 && batteryFilters.integration === 'all') {
+      setBatteryFilter('integration', integrationList[0])
     }
-  }, [integrationList, integrationFilters.integration, setIntegrationFilter])
-
-  useEffect(() => {
-    const entityParam = searchParams.get('entity')
-    if (entityParam && integrationEntities.length > 0) {
-      const entity = integrationEntities.find(e => e.entity_id === entityParam)
-      if (entity) {
-        setIntegrationSearch(entityParam)
-        if (entity.integration && integrationList.includes(entity.integration)) {
-          setIntegrationFilter('integration', entity.integration)
-        }
-        setEntityNotFound(null)
-      } else {
-        setEntityNotFound(entityParam)
-        setIntegrationSearch(entityParam)
-      }
-    }
-  }, [searchParams, integrationEntities, integrationList, setIntegrationFilter, setIntegrationSearch])
+  }, [integrationList, batteryFilters.integration, setBatteryFilter])
 
   const totalInIntegration = useMemo(() => {
-    if (integrationFilters.integration === 'all') {
+    if (batteryFilters.integration === 'all') {
       return integrationEntities.length
     }
-    return integrationEntities.filter(e => e.integration === integrationFilters.integration).length
-  }, [integrationEntities, integrationFilters.integration])
+    return integrationEntities.filter(e => e.integration === batteryFilters.integration).length
+  }, [integrationEntities, batteryFilters.integration])
 
   const areaToFloorMap = useMemo(() => {
     const map: Record<string, string> = {}
@@ -148,47 +127,56 @@ export default function IntegrationsTable() {
 
   const filteredEntities = useMemo(() => {
     return integrationEntities.filter(e => {
-      const searchTerms = integrationSearch.trim().toLowerCase().split(/\s+/).filter(Boolean)
+      const searchTerms = batterySearch.trim().toLowerCase().split(/\s+/).filter(Boolean)
       const matchSearch = searchTerms.length === 0 ||
         searchTerms.every(term =>
           e.friendly_name.toLowerCase().includes(term) ||
           e.entity_id.toLowerCase().includes(term)
         )
 
-      const matchStatus = integrationFilters.status === 'all' ||
-        (integrationFilters.status === 'online' ? e.online : !e.online)
+      const matchStatus = batteryFilters.status === 'all' ||
+        (batteryFilters.status === 'online' ? e.online : !e.online)
 
       let matchTyp = true
-      if (integrationFilters.typ === 'none') {
+      if (batteryFilters.typ === 'none') {
         matchTyp = e.typ === null && e.typLabelRaw !== 'typ_ignore'
-      } else if (integrationFilters.typ === 'Ignorieren') {
+      } else if (batteryFilters.typ === 'Ignorieren') {
         matchTyp = e.typLabelRaw === 'typ_ignore'
-      } else if (integrationFilters.typ !== 'all') {
-        matchTyp = e.typ === integrationFilters.typ
+      } else if (batteryFilters.typ !== 'all') {
+        matchTyp = e.typ === batteryFilters.typ
       }
 
-      const matchIntegration = integrationFilters.integration === 'all' ||
-        e.integration === integrationFilters.integration
+      const matchIntegration = batteryFilters.integration === 'all' ||
+        e.integration === batteryFilters.integration
 
+      const batterieLabel = e.labels.find(l => l && l.startsWith('batterie_')) || null
       const currentFloorId = e.area_id ? areaToFloorMap[e.area_id] : null
-      const configStatus = getConfigStatus(e, currentFloorId)
-      const matchConfigStatus = integrationFilters.configStatus === 'all' ||
-        (integrationFilters.configStatus === 'complete' ? configStatus.isComplete : !configStatus.isComplete)
+      const configStatus = getConfigStatus(e, currentFloorId, batterieLabel)
+      const matchConfigStatus = batteryFilters.configStatus === 'all' ||
+        (batteryFilters.configStatus === 'complete' ? configStatus.isComplete : !configStatus.isComplete)
 
       const entityArea = areas.find(a => a.area_id === e.area_id)
-      const matchFloor = integrationFilters.floor === 'all' || entityArea?.floor_id === floors.find(f => f.name === integrationFilters.floor)?.floor_id
-      const matchArea = integrationFilters.area === 'all' || e.area_id === areas.find(a => a.name === integrationFilters.area)?.area_id
-      const matchIgnore = integrationFilters.ignore !== 'hidden' || e.typLabelRaw !== 'typ_ignore'
+      const matchFloor = batteryFilters.floor === 'all' || entityArea?.floor_id === floors.find(f => f.name === batteryFilters.floor)?.floor_id
+      const matchArea = batteryFilters.area === 'all' || e.area_id === areas.find(a => a.name === batteryFilters.area)?.area_id
 
-      return matchSearch && matchStatus && matchTyp && matchIntegration && matchConfigStatus && matchFloor && matchArea && matchIgnore
+      let matchBatterie = true
+      if (batteryFilters.batterie === 'ohne_zuordnung') {
+        matchBatterie = !batterieLabel
+      } else if (batteryFilters.batterie === 'batterie_ja') {
+        matchBatterie = batterieLabel === 'batterie_ja'
+      } else if (batteryFilters.batterie === 'batterie_nein') {
+        matchBatterie = batterieLabel === 'batterie_nein'
+      }
+
+      return matchSearch && matchStatus && matchTyp && matchIntegration && matchConfigStatus && matchFloor && matchArea && matchBatterie
     }).sort((a, b) => {
-      const va = String(a[integrationSort.field as keyof EntityData] || '')
-      const vb = String(b[integrationSort.field as keyof EntityData] || '')
-      return integrationSort.direction === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va)
+      const va = String(a[batterySort.field as keyof EntityData] || '')
+      const vb = String(b[batterySort.field as keyof EntityData] || '')
+      return batterySort.direction === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va)
     })
-  }, [integrationEntities, integrationSearch, integrationFilters, integrationSort, areaToFloorMap, areas, floors])
+  }, [integrationEntities, batterySearch, batteryFilters, batterySort, areaToFloorMap, areas, floors])
 
-  const handleLabelChange = async (entityId: string, newLabel: string, oldLabel: string | null) => {
+  const handleBatterieLabelChange = async (entityId: string, newLabel: string, oldLabel: string | null) => {
     const entity = integrationEntities.find(e => e.entity_id === entityId)
     if (!entity) return
 
@@ -203,15 +191,19 @@ export default function IntegrationsTable() {
     await updateEntityLabels(entityId, labels)
   }
 
-  const handleBulkLabel = async () => {
+  const handleBulkBatterieLabel = async () => {
     if (!bulkLabel) return
-    const labelName = typLabels.find(l => l.label_id === bulkLabel)?.name || bulkLabel
-    const toUpdate = filteredEntities.filter(e => e.typLabelRaw !== bulkLabel)
+    const labelName = bulkLabel === 'batterie_ja' ? 'Ja' : 'Nein'
+    const toUpdate = filteredEntities.filter(e => {
+      const currentBatterie = e.labels.find(l => l && l.startsWith('batterie_'))
+      return currentBatterie !== bulkLabel
+    })
     if (toUpdate.length === 0) return
     if (!window.confirm(`${toUpdate.length} Entität(en) auf "${labelName}" setzen?`)) return
     for (const entity of toUpdate) {
-      const labels = entity.typLabelRaw
-        ? entity.labels.filter(l => l !== entity.typLabelRaw)
+      const currentBatterie = entity.labels.find(l => l && l.startsWith('batterie_'))
+      let labels = currentBatterie
+        ? entity.labels.filter(l => l !== currentBatterie)
         : [...entity.labels]
       labels.push(bulkLabel)
       await updateEntityLabels(entity.entity_id, labels)
@@ -235,23 +227,18 @@ export default function IntegrationsTable() {
   }
 
   const SortArrow = ({ field }: { field: string }) => (
-    <span className={`ml-1 text-[10px] ${integrationSort.field === field ? 'opacity-100 text-[#0A84FF]' : 'opacity-30'}`}>
-      {integrationSort.field === field ? (integrationSort.direction === 'asc' ? '▲' : '▼') : '▲'}
+    <span className={`ml-1 text-[10px] ${batterySort.field === field ? 'opacity-100 text-[#0A84FF]' : 'opacity-30'}`}>
+      {batterySort.field === field ? (batterySort.direction === 'asc' ? '▲' : '▼') : '▲'}
     </span>
   )
 
   return (
     <div className="flex flex-col h-full space-y-4">
-      {entityNotFound && (
-        <div className="px-4 py-2 bg-[#FF453A20] border border-[#FF453A] rounded-lg text-sm text-[#FF453A]">
-          Entität "{entityNotFound}" ist nicht in den Entitäten (Hue, Homematic IP) enthalten.
-        </div>
-      )}
       <div className="flex-shrink-0 flex items-center gap-4">
-        <h1 className="text-xl font-semibold text-[#ffffff]">Integrationen</h1>
+        <h1 className="text-xl font-semibold text-[#ffffff]">Batterien</h1>
         <select
-          value={integrationFilters.integration}
-          onChange={(e) => setIntegrationFilter('integration', e.target.value)}
+          value={batteryFilters.integration}
+          onChange={(e) => setBatteryFilter('integration', e.target.value)}
           className="px-3 py-2 text-xs bg-[#1c1c1e] border border-[#2c2c2e] rounded-lg text-[#ffffff] focus:outline-none focus:border-[#0A84FF] min-w-[140px]"
         >
           {integrationList.map(integration => (
@@ -263,8 +250,8 @@ export default function IntegrationsTable() {
         </span>
         <input
           type="text"
-          value={integrationSearch}
-          onChange={(e) => setIntegrationSearch(e.target.value)}
+          value={batterySearch}
+          onChange={(e) => setBatterySearch(e.target.value)}
           placeholder="Suchen (mehrere Begriffe mit Leerzeichen = UND)"
           className="flex-1 px-4 py-2 bg-[#1c1c1e] border border-[#2c2c2e] rounded-lg text-[#ffffff] placeholder-[#4a4a4a] focus:outline-none focus:border-[#0A84FF]"
         />
@@ -273,13 +260,12 @@ export default function IntegrationsTable() {
           onChange={(e) => setBulkLabel(e.target.value)}
           className="px-3 py-2 text-xs bg-[#1c1c1e] border border-[#2c2c2e] rounded-lg text-[#ffffff] focus:outline-none focus:border-[#0A84FF]"
         >
-          <option value="">Typ wählen…</option>
-          {[...typLabels].sort((a, b) => a.name.localeCompare(b.name)).map(label => (
-            <option key={label.label_id} value={label.label_id}>{label.name}</option>
-          ))}
+          <option value="">Batterie wählen...</option>
+          <option value="batterie_ja">Ja</option>
+          <option value="batterie_nein">Nein</option>
         </select>
         <button
-          onClick={handleBulkLabel}
+          onClick={handleBulkBatterieLabel}
           disabled={!bulkLabel}
           className={`px-4 py-2 text-xs font-medium rounded-lg border transition-colors whitespace-nowrap ${
             bulkLabel
@@ -293,9 +279,9 @@ export default function IntegrationsTable() {
 
       <div className="flex-shrink-0">
         <FilterBar
-          filters={integrationFilters}
+          filters={batteryFilters}
           availableFilters={availableFilters}
-          onFilterChange={setIntegrationFilter}
+          onFilterChange={setBatteryFilter}
         />
       </div>
 
@@ -311,13 +297,13 @@ export default function IntegrationsTable() {
                   { key: 'floor', label: 'Bereich' },
                   { key: 'area', label: 'Raum' },
                   { key: 'friendly_name', label: 'Device' },
-                  { key: 'labels', label: 'Typ' },
+                  { key: 'batterie', label: 'Batterie' },
                   { key: 'entity_id', label: 'Entity ID' },
                   { key: 'state', label: 'Wert' },
                 ].map(col => (
                   <th
                     key={col.key}
-                    onClick={() => setIntegrationSort(col.key)}
+                    onClick={() => setBatterySort(col.key)}
                     className="sticky top-0 bg-[#1c1c1e] z-10 px-4 py-3 text-left text-xs font-medium text-[#9a9a9a] uppercase tracking-wider cursor-pointer hover:text-[#0A84FF] whitespace-nowrap"
                   >
                     {col.label}<SortArrow field={col.key} />
@@ -332,7 +318,8 @@ export default function IntegrationsTable() {
                 const availableAreas = currentFloorId && floorToAreasMap[currentFloorId]
                   ? floorToAreasMap[currentFloorId].map(aid => areas.find(a => a.area_id === aid)).filter(Boolean)
                   : areas
-                const configStatus = getConfigStatus(entity, currentFloorId)
+                const batterieLabel = entity.labels.find(l => l && l.startsWith('batterie_')) || null
+                const configStatus = getConfigStatus(entity, currentFloorId, batterieLabel)
 
                 return (
                   <tr key={entity.entity_id} className="border-b border-[#2c2c2e] hover:bg-[#2c2c2e] transition-colors">
@@ -343,7 +330,7 @@ export default function IntegrationsTable() {
                         </span>
                       ) : (
                         <span className="px-2 py-1 bg-[#3D0606] text-[#FF453A] rounded-full text-xs font-medium">
-                          ⚠ Unvollständig
+                          ⚠ {configStatus.missing.join(', ')}
                         </span>
                       )}
                     </td>
@@ -437,16 +424,15 @@ export default function IntegrationsTable() {
                     </td>
                     <td className="px-4 py-2">
                       <select
-                        value={entity.typLabelRaw || ''}
-                        onChange={(e) => handleLabelChange(entity.entity_id, e.target.value, entity.typLabelRaw)}
+                        value={batterieLabel || ''}
+                        onChange={(e) => handleBatterieLabelChange(entity.entity_id, e.target.value, batterieLabel)}
                         className={`px-2 py-1 bg-[#1c1c1e] border rounded text-xs text-[#ffffff] ${
-                          !entity.typLabelRaw ? 'border-[#FF453A]' : 'border-[#2c2c2e]'
+                          !batterieLabel ? 'border-[#FF453A]' : 'border-[#2c2c2e]'
                         }`}
                       >
-                        <option value="">- Kein Typ -</option>
-                        {[...typLabels].sort((a, b) => a.name.localeCompare(b.name)).map(label => (
-                          <option key={label.label_id} value={label.label_id}>{label.name}</option>
-                        ))}
+                        <option value="">Ohne Zuordnung</option>
+                        <option value="batterie_ja">Ja</option>
+                        <option value="batterie_nein">Nein</option>
                       </select>
                     </td>
                     <td className="px-4 py-2">

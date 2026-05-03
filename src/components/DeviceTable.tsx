@@ -109,10 +109,13 @@ export default function DeviceTable() {
 
   const filteredEntities = useMemo(() => {
     return entities.filter(e => {
-      const matchSearch = !deviceSearch || 
-        e.friendly_name.toLowerCase().includes(deviceSearch.toLowerCase()) ||
-        e.entity_id.toLowerCase().includes(deviceSearch.toLowerCase()) ||
-        e.area.toLowerCase().includes(deviceSearch.toLowerCase())
+      const searchTerms = deviceSearch.trim().toLowerCase().split(/\s+/).filter(Boolean)
+      const matchSearch = searchTerms.length === 0 ||
+        searchTerms.every(term =>
+          e.friendly_name.toLowerCase().includes(term) ||
+          e.entity_id.toLowerCase().includes(term) ||
+          e.area.toLowerCase().includes(term)
+        )
 
       const matchStatus = deviceFilters.status === 'all' ||
         (deviceFilters.status === 'online' ? e.online : !e.online)
@@ -197,7 +200,7 @@ export default function DeviceTable() {
           type="text"
           value={deviceSearch}
           onChange={(e) => setDeviceSearch(e.target.value)}
-          placeholder="Suchen (Name, Raum, Entity ID...)"
+          placeholder="Suchen (mehrere Begriffe mit Leerzeichen = UND)"
           className="flex-1 px-4 py-2 bg-[#1c1c1e] border border-[#2c2c2e] rounded-lg text-[#ffffff] placeholder-[#4a4a4a] focus:outline-none focus:border-[#0A84FF]"
         />
       </div>

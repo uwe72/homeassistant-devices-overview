@@ -97,6 +97,17 @@ export type IntegrationFilterState = {
   [key: string]: string
 }
 
+export type BatteryFilterState = {
+  status: string
+  typ: string
+  integration: string
+  configStatus: string
+  floor: string
+  area: string
+  batterie: string
+  [key: string]: string
+}
+
 export type SortDirection = 'asc' | 'desc'
 
 export interface SortState {
