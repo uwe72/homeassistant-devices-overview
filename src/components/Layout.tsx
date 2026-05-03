@@ -19,13 +19,13 @@ export default function Layout() {
           <div className="flex items-center justify-between">
             <RouterLink to="/" className="flex items-center gap-3">
               <svg width="44" height="44" viewBox="0 0 44 44" className="drop-shadow-lg">
-                <circle cx="22" cy="22" r="20" fill="#0A84FF"/>
+                <circle cx="22" cy="22" r="20" fill="#00A5CB"/>
                 <circle cx="22" cy="22" r="18" fill="none" stroke="#1c1c1e" strokeWidth="2"/>
                 <path d="M22 10 L22 34" stroke="#1c1c1e" strokeWidth="3" strokeLinecap="round"/>
                 <path d="M10 22 L34 22" stroke="#1c1c1e" strokeWidth="3" strokeLinecap="round"/>
                 <circle cx="22" cy="22" r="4" fill="#1c1c1e"/>
               </svg>
-              <span className="text-xl font-bold text-[#0A84FF]">
+              <span className="text-xl font-bold text-[#00A5CB]">
                 HA Device Manager
               </span>
               {import.meta.env.VITE_APP_VERSION && (
@@ -43,8 +43,8 @@ export default function Layout() {
                     to={item.path}
                     className={`transition-colors ${
                       location.pathname === item.path
-                        ? 'text-[#0A84FF] font-medium'
-                        : 'text-[#9a9a9a] hover:text-[#0A84FF]'
+                        ? 'text-[#00A5CB] font-medium'
+                        : 'text-[#9a9a9a] hover:text-[#00A5CB]'
                     }`}
                   >
                     {item.label}
@@ -64,17 +64,6 @@ export default function Layout() {
                     className="px-3 py-1 text-sm bg-[#2c2c2e] hover:bg-[#3c3c3e] border border-[#3c3c3e] rounded text-[#ffffff] transition-colors"
                   >
                     Trennen
-                  </button>
-                  <button
-                    onClick={() => {
-                      const url = localStorage.getItem('ha_url')
-                      if (url) {
-                        window.open(url + '/config/entities', '_blank')
-                      }
-                    }}
-                    className="px-3 py-1 text-sm bg-[#2c2c2e] hover:bg-[#3c3c3e] border border-[#3c3c3e] rounded text-[#ffffff] transition-colors"
-                  >
-                    HA öffnen
                   </button>
                 </>
               )}
