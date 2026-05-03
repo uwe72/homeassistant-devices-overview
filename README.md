@@ -71,7 +71,7 @@ services:
     restart: unless-stopped
 ```
 ```bash
-pull ghcr.io/uwe72/homeassistant-devices-overview:latest
+docker pull ghcr.io/uwe72/homeassistant-devices-overview:latest
 ```
 ```bash
 docker compose up -d ha-devices-overview
