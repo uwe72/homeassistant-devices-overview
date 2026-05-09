@@ -55,6 +55,11 @@ const INTEGRATION_MAP: Record<string, string> = {
   'shelly': 'Shelly',
   'esphome': 'ESPHome',
   'homematicip_local': 'Homematic IP',
+  'homematic': 'Homematic',
+  'deconz': 'deCONZ',
+  'meross_lan': 'meross_lan',
+  'ecovacs': 'ecovacs',
+  'remote_homeassistant': 'Remote Home-Assistant',
   'group': 'Gruppe'
 }
 
@@ -213,7 +218,16 @@ export function HAProvider({ children }: { children: React.ReactNode }) {
       const floor = floorMap[area?.floor_id || '']
 
       const labels = e.labels || []
-      const isAllowedIntegration = e.platform === 'hue' || e.platform === 'homematicip_local'
+      const isAllowedIntegration = [
+        'hue',
+        'shelly',
+        'homematicip_local',
+        'homematic',
+        'deconz',
+        'meross_lan',
+        'ecovacs',
+        'remote_homeassistant'
+      ].includes(e.platform)
 
       const typLabel = labels.find(l => l && l.startsWith('typ_'))
       const isValidTypLabel = typLabel && labelRegistry.some(l => l.label_id === typLabel)

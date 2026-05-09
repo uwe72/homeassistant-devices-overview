@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useHA } from '../context/HAContext'
 import FilterBar from './FilterBar'
+import SearchInput from './SearchInput'
 import type { EntityData } from '../types'
 
 function StatusDot({ online }: { online: boolean }) {
@@ -20,6 +21,11 @@ const INTEGRATION_COLORS: Record<string, { bg: string; text: string }> = {
   'Shelly': { bg: 'bg-[#FF9F0A20]', text: 'text-[#FF9F0A]' },
   'ESPHome': { bg: 'bg-[#FFD60A20]', text: 'text-[#FFD60A]' },
   'Homematic IP': { bg: 'bg-[#BF5AF220]', text: 'text-[#BF5AF2]' },
+  'Homematic': { bg: 'bg-[#BF5AF220]', text: 'text-[#BF5AF2]' },
+  'deCONZ': { bg: 'bg-[#FFD60A20]', text: 'text-[#FFD60A]' },
+  'meross_lan': { bg: 'bg-[#30D15820]', text: 'text-[#30D158]' },
+  'ecovacs': { bg: 'bg-[#30D15820]', text: 'text-[#30D158]' },
+  'Remote Home-Assistant': { bg: 'bg-[#0A84FF20]', text: 'text-[#0A84FF]' },
   'Gruppe': { bg: 'bg-[#4a4a4a20]', text: 'text-[#9a9a9a]' },
 }
 
@@ -261,12 +267,10 @@ export default function IntegrationsTable() {
         <span className="text-sm text-[#9a9a9a]">
           Zeige <span className="text-[#00A5CB] font-semibold">{filteredEntities.length}</span> von <span className="text-[#00A5CB] font-semibold">{totalInIntegration}</span> Entitäten
         </span>
-        <input
-          type="text"
+        <SearchInput
           value={integrationSearch}
-          onChange={(e) => setIntegrationSearch(e.target.value)}
+          onChange={setIntegrationSearch}
           placeholder="Suchen (mehrere Begriffe mit Leerzeichen = UND)"
-          className="flex-1 px-4 py-2 bg-[#1c1c1e] border border-[#2c2c2e] rounded-lg text-[#ffffff] placeholder-[#4a4a4a] focus:outline-none focus:border-[#00A5CB]"
         />
         <select
           value={bulkLabel}
