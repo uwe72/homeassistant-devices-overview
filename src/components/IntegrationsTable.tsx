@@ -101,13 +101,6 @@ export default function IntegrationsTable() {
   }, [integrationEntities])
 
   useEffect(() => {
-    if (integrationList.length > 0 &&
-        (integrationFilters.integration === 'all' || !integrationList.includes(integrationFilters.integration))) {
-      setIntegrationFilter('integration', integrationList[0])
-    }
-  }, [integrationList, integrationFilters.integration, setIntegrationFilter])
-
-  useEffect(() => {
     const entityParam = searchParams.get('entity')
     if (entityParam && integrationEntities.length > 0) {
       const entity = integrationEntities.find(e => e.entity_id === entityParam)
@@ -260,6 +253,7 @@ export default function IntegrationsTable() {
           onChange={(e) => setIntegrationFilter('integration', e.target.value)}
           className="px-3 py-2 text-xs bg-[#1c1c1e] border border-[#2c2c2e] rounded-lg text-[#ffffff] focus:outline-none focus:border-[#00A5CB] min-w-[140px]"
         >
+          <option value="all">Alle</option>
           {integrationList.map(integration => (
             <option key={integration} value={integration}>{integration}</option>
           ))}

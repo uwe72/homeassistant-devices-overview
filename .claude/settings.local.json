@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find /c/Projects/homeassistant-devices-overview/src -type f -name *.ts -o -name *.tsx)",
+      "Bash(find /c/Projects/homeassistant-devices-overview -type f \\\\\\(-name *.ts -o -name *.tsx -o -name *.json -o -name *.css -o -name *.js \\\\\\) ! -path */node_modules/*)",
+      "Bash(find /c/Projects/homeassistant-devices-overview -maxdepth 3 -not -path */node_modules/* -not -path */dist/* -type d)"
+    ]
+  }
+}
