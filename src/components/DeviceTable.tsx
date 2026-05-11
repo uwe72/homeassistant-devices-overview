@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useMemo, useEffect } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useHA } from '../context/HAContext'
 import FilterBar from './FilterBar'
 import SearchInput from './SearchInput'
@@ -70,9 +70,17 @@ function formatTyp(typ: string | null): string {
 
 export default function DeviceTable() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const { entities, areas, floors, updateEntityName, deviceFilters, deviceSearch, deviceSort, setDeviceFilter, setDeviceSearch, setDeviceSort } = useHA()
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editValue, setEditValue] = useState('')
+
+  useEffect(() => {
+    const entityIdParam = searchParams.get('entity_id')
+    if (entityIdParam && entityIdParam !== deviceSearch) {
+      setDeviceSearch(entityIdParam)
+    }
+  }, [searchParams])
 
   const availableFilters = useMemo(() => {
     const types = new Set<string>()
@@ -304,7 +312,7 @@ export default function DeviceTable() {
                   </td>
                   <td className="px-4 py-2">
                     <button
-                      onClick={() => navigate(`/entities?entity=${encodeURIComponent(entity.entity_id)}`)}
+                      onClick={() => navigate(`/entities?tab=geraete&entity_id=${encodeURIComponent(entity.entity_id)}`)}
                       className="px-2 py-1 text-xs bg-[#00A5CB20] text-[#00A5CB] hover:bg-[#00A5CB40] border border-[#00A5CB] rounded transition-colors"
                     >
                       Entität anzeigen

@@ -101,18 +101,18 @@ export default function IntegrationsTable() {
   }, [integrationEntities])
 
   useEffect(() => {
-    const entityParam = searchParams.get('entity')
-    if (entityParam && integrationEntities.length > 0) {
-      const entity = integrationEntities.find(e => e.entity_id === entityParam)
+    const entityIdParam = searchParams.get('entity_id')
+    if (entityIdParam && integrationEntities.length > 0) {
+      const entity = integrationEntities.find(e => e.entity_id === entityIdParam)
       if (entity) {
-        setIntegrationSearch(entityParam)
+        setIntegrationSearch(entityIdParam)
         if (entity.integration && integrationList.includes(entity.integration)) {
           setIntegrationFilter('integration', entity.integration)
         }
         setEntityNotFound(null)
       } else {
-        setEntityNotFound(entityParam)
-        setIntegrationSearch(entityParam)
+        setEntityNotFound(entityIdParam)
+        setIntegrationSearch(entityIdParam)
       }
     }
   }, [searchParams, integrationEntities, integrationList, setIntegrationFilter, setIntegrationSearch])

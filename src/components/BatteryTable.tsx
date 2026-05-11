@@ -100,16 +100,16 @@ export default function BatteryTable() {
   }, [integrationEntities])
 
   useEffect(() => {
-    const entityParam = searchParams.get('entity')
-    if (entityParam && integrationEntities.length > 0) {
-      const entity = integrationEntities.find(e => e.entity_id === entityParam)
+    const entityIdParam = searchParams.get('entity_id')
+    if (entityIdParam && integrationEntities.length > 0) {
+      const entity = integrationEntities.find(e => e.entity_id === entityIdParam)
       if (entity) {
-        setBatterySearch(entityParam)
+        setBatterySearch(entityIdParam)
         if (entity.integration && integrationList.includes(entity.integration)) {
           setBatteryFilter('integration', entity.integration)
         }
       } else {
-        setBatterySearch(entityParam)
+        setBatterySearch(entityIdParam)
       }
     }
   }, [searchParams, integrationEntities, integrationList, setBatteryFilter, setBatterySearch])

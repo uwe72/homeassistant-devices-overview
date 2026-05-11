@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useMemo, useEffect } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useHA } from '../context/HAContext'
 import FilterBar from './FilterBar'
 import SearchInput from './SearchInput'
@@ -56,9 +56,17 @@ function getIntegrationColor(integration: string): { bg: string; text: string } 
 
 export default function BatteriesTable() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const { allEntities, areas, floors, updateEntityName, batteriesFilters, batteriesSearch, batteriesSort, setBatteriesFilter, setBatteriesSearch, setBatteriesSort } = useHA()
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editValue, setEditValue] = useState('')
+
+  useEffect(() => {
+    const entityIdParam = searchParams.get('entity_id')
+    if (entityIdParam && entityIdParam !== batteriesSearch) {
+      setBatteriesSearch(entityIdParam)
+    }
+  }, [searchParams])
 
   const batteryEntities = useMemo(() => {
     return allEntities.filter(e => e.labels.includes('batterie_ja'))
@@ -278,7 +286,7 @@ export default function BatteriesTable() {
                   </td>
                   <td className="px-4 py-2">
                     <button
-                      onClick={() => navigate(`/entities?tab=batterie&entity=${encodeURIComponent(entity.entity_id)}`)}
+                      onClick={() => navigate(`/entities?tab=batterie&entity_id=${encodeURIComponent(entity.entity_id)}`)}
                       className="px-2 py-1 text-xs bg-[#00A5CB20] text-[#00A5CB] hover:bg-[#00A5CB40] border border-[#00A5CB] rounded transition-colors"
                     >
                       Entität anzeigen

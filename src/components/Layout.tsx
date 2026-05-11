@@ -6,7 +6,7 @@ export default function Layout() {
   const location = useLocation()
 
   const navItems = [
-    { path: '/', label: 'Geräte' },
+    { path: '/devices', label: 'Geräte' },
     { path: '/batteries', label: 'Batterien' },
     { path: '/entities', label: 'Entitäten' },
     { path: '/statistics', label: 'Statistiken' }

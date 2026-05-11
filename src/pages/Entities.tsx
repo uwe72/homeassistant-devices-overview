@@ -17,7 +17,7 @@ export default function Entities() {
   const [activeTab, setActiveTab] = useState<TabId>(() => {
     const tabParam = searchParams.get('tab')
     if (tabParam === 'batterie') return 'batterie'
-    if (searchParams.has('entity')) return 'geraete'
+    if (searchParams.has('entity_id')) return 'geraete'
     return (localStorage.getItem(STORAGE_KEY) as TabId) || 'geraete'
   })
 

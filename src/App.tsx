@@ -29,12 +29,13 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/" element={<Layout />}>
-        <Route index element={<Devices />} />
+        <Route index element={<Navigate to="/devices" replace />} />
+        <Route path="devices" element={<Devices />} />
         <Route path="batteries" element={<Batteries />} />
         <Route path="entities" element={<Entities />} />
         <Route path="integrations" element={<IntegrationsDevices />} />
         <Route path="statistics" element={<Statistics />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<Navigate to="/devices" replace />} />
       </Route>
     </Routes>
   )
